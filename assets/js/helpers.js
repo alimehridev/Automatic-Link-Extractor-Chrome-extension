@@ -15,3 +15,14 @@ document.getElementById("removeAllBtn").addEventListener("click", () => {
         })
     }
 })
+
+document.getElementById("copy_all").addEventListener("click", (e) => {
+    chrome.storage.local.get("links", (result) => {
+        e.target.innerText = "Copied"
+        let arr = result["links"][getQueryParam("origin")] || [];
+        copyToClipboard(arr.join("\n"))
+        setTimeout(() => {
+            e.target.innerText = "Copy all to clipboard"
+        }, 500)
+    })
+})
