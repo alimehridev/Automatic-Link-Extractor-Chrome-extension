@@ -46,11 +46,13 @@ document.getElementById("get_js_links").addEventListener("click", () => {
         output_links.sort()
         output.value = output_links.join("\n")
         document.getElementsByClassName("links-number")[0].innerText = `${output_links.length} links`
+        document.getElementById("current_file").innerHTML = "Current file: " + new URL(link).pathname.split("/").reverse()[0]
         let progress = parseInt(progression.getAttribute("value"))
         progression.setAttribute("value", progress + 1)
         numeric_progression.innerText = `${progress + 1}/${scripts_number}`
 
       }).catch(e => {
+        document.getElementById("current_file").innerHTML = "Current file: " + new URL(link).pathname.split("/").reverse()[0]
         let progress = parseInt(progression.getAttribute("value"))
         progression.setAttribute("value", progress + 1)
         numeric_progression.innerText = `${progress + 1}/${scripts_number}`  
