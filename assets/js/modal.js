@@ -10,7 +10,8 @@ document.getElementById("closeModalBtn").addEventListener("click", () => {
 document.getElementById("get_js_links").addEventListener("click", () => {
   document.getElementById("myModal").style.display = "block";
   let progression = document.getElementById("progression")
-
+  let output = document.getElementById("output")
+  output.value = ""
 
 
   let numeric_progression = document.getElementById("numeric-progression")
@@ -37,7 +38,6 @@ document.getElementById("get_js_links").addEventListener("click", () => {
 
         const absoluteLinks = content.match(absoluteRegex);
         const relativeLinks = content.match(relativeRegex);
-        let output = document.getElementById("output")
         let output_links = output.value.split("\n")
         output_links = output_links.concat(absoluteLinks)
         output_links = output_links.concat(relativeLinks)
