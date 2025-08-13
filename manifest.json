@@ -3,7 +3,7 @@
   "name": "Automatic Link Extractor",
   "version": "1.0",
   "description": "A chrome extension which detect DOM changes and extract links from it",
-  "permissions": ["storage", "scripting"],
+  "permissions": ["storage", "scripting", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_icon": {
