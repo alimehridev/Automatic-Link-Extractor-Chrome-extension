@@ -3,6 +3,15 @@ function getQueryParam(param) {
   return urlParams.get(param);
 }
 
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 
 document.getElementById("removeAllBtn").addEventListener("click", () => {
     let confirmation = confirm("Are you sure ?")

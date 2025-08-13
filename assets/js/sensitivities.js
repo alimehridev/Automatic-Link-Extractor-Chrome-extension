@@ -39,11 +39,3 @@ Object.keys(sensitivity_chboxes).forEach(item => {
 })
 
 
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
