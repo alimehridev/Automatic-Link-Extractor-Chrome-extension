@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+
+    <title>DOM Watcher</title>
+  </head>
+  <style>
+    h2 { margin-top: 40px; }
+    .page, .link {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .keyword {
+      background: #eee;
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 4px;
+      border-radius: 4px;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .backBtn {
+      padding: 10px 5px;
+      border: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #addBtn, #addOriginBtn {
+      padding: 10px 15px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    #addBtn:hover, #addOriginBtn:hover {
+      background-color: #45a049;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    li {
+      background: #fff;
+      padding: 10px 15px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #ddd;
+    }
+
+    .remove-btn, .origin-remove-btn {
+      background-color: #270400;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .remove-btn:hover, .origin-remove-btn:hover {
+      background: #c0392b;
+    }
+    
+  </style>
+  <link rel="stylesheet" href="assets/styles/style.css">
+  <link rel="stylesheet" href="assets/styles/modal.css">
+  <body>
+    <div class="main_dashboard">
+      <div class="input-group">
+        <input type="text" id="originInput" placeholder="Enter origin..." />
+        <button id="addOriginBtn">Add</button>
+      </div>
+
+      <h1>🔍 Origin List</h1>
+      <ul id="originList"></ul>
+      <div id="added_origin"></div>
+      <div id="data"></div>
+      <script src="assets/js/addorigin.js"></script>
+
+    </div>
+    <div class="origin_dashboard">
+      <div class="input-group">
+        <div style="display:flex; justify-content: start;">
+          <span class="backBtn" style="text-decoration: underline;">Back</span>
+        </div>
+        <div class="" style="border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; padding-top: 5px; padding-bottom: 5px;">
+          <div class="" style="margin-bottom: 10px">
+            <h2 style="margin-top: initial; text-align: left;">📡 Sensitivity Configurations</h2>
+          </div>
+          <div class="attribute-list">
+            <div class="attribute" style="padding-bottom: 7px;">
+              <label class="switch">
+                <input type="checkbox" name="all" id="all">
+                <span class="slider"></span>
+              </label>
+              Select ALL
+            </div>
+            <div class="attribute" style="padding-bottom: 7px;">
+              <a href="https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver/observe#subtree" target="_blank" style="color: #c31b1b">
+                For more information
+              </a>
+            </div>
+            <div class="attribute">
+              <label class="switch">
+                <input type="checkbox" class="sensitivity" name="childList" id="childList">
+                <span class="slider"></span>
+              </label>
+              childList
+            </div>
+            <div class="attribute">
+              <label class="switch">
+                <input type="checkbox" class="sensitivity" name="subtree" id="subtree">
+                <span class="slider"></span>
+              </label>
+              subtree
+            </div>
+            <div class="attribute">
+              <label class="switch">
+                <input type="checkbox" class="sensitivity" name="attributes" id="attributes">
+                <span class="slider"></span>
+              </label>
+              attributes
+            </div>
+            <div class="attribute">
+              <label class="switch">
+                <input type="checkbox" class="sensitivity" name="attributeOldValue" id="attributeOldValue">
+                <span class="slider"></span>
+              </label>
+              attributeOldValue
+            </div>
+            <div class="attribute">
+              <label class="switch">
+                <input type="checkbox" class="sensitivity" name="characterData" id="characterData">
+                <span class="slider"></span>
+              </label>
+              characterData
+            </div>
+            <div class="attribute">
+              <label class="switch">
+                <input type="checkbox" class="sensitivity" name="characterDataOldValue" id="characterDataOldValue">
+                <span class="slider"></span>
+              </label>
+              characterDataOldValue
+            </div>
+          </div>
+        </div> 
+        <button id="save_sensitivities">Save</button>
+      </div>
+
+      <ul id="keywordList"></ul>
+
+      <div class="" style="margin-bottom: 10px">
+        <h2 style="margin-top: initial; text-align: left;">🔍 Extracted Links</h2>
+      </div>
+      <div id="origin"></div>
+      <div id="links"></div>
+
+      <div class="pagination">
+
+      </div>
+      <div style="margin-top: 10px;">
+        <button id="copy_all">Copy all to clipboard</button>
+        <button id="get_js_links">Extract links from JS files</button>
+      </div>
+
+
+      <div id="myModal" class="modal">
+        <div class="modal-content">
+          <span id="closeModalBtn" class="close-btn">&times;</span>
+          <div class="progress-div">
+            <label for="file">Progress:</label>
+            <div style="display: flex; justify-content: center; align-items: center;">
+              <progress id="progression" value="0" max="100"></progress>
+              <span id="numeric-progression">10/124</span>
+            </div>
+          </div>
+          <div>
+            <textarea name="output" id="output"></textarea>
+          </div>
+          <span id="copyBtn">copy</span>
+          <div class="info-bar">
+            <span class="links-number">0 links</span>
+          </div>
+        </div>
+      </div>
+
+      <script src="assets/js/dashboard.js"></script>
+      <script src="assets/js/sensitivities.js"></script>
+      <script src="assets/js/modal.js"></script>
+    </div>
+    <script src="assets/js/dash_checker.js"></script>
+</body>
+</html>
