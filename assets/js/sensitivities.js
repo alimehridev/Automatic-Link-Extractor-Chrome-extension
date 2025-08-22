@@ -39,17 +39,3 @@ Object.keys(sensitivity_chboxes).forEach(item => {
 })
 
 
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
-document.getElementById("copy_all").addEventListener("click", () => {
-    chrome.storage.local.get("links", (result) => {
-        let arr = result["links"][getQueryParam("origin")] || [];
-        copyToClipboard(arr.join("\n"))
-    })
-})

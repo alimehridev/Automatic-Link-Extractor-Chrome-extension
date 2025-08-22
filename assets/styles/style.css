@@ -58,6 +58,16 @@ input[type="text"] {
     cursor: pointer;
     transition: background-color 0.2s;
 }
+
+.buttons_container {
+  margin-top: 10px;
+}
+.buttons_container button {
+  margin-top: 2px;
+  width: 100%;
+
+}
+
 #addBtn, 
 #save_sensitivities, 
 #addUrlBtn, 
@@ -73,18 +83,12 @@ input[type="text"] {
     transition: background-color 0.2s;
 }
 #copy_all {
-  width: 100%;
-  margin-bottom: 10px;
   background-color: #0066ff;
 }
 #removeAllBtn {
-  width: 100%;
-  margin-top: 10px;
   background-color: #ff0000;
 }
 #get_js_links {
-  width: 100%;
-  margin-top: 10px;
   background-color: #af3333;
 }
 #addBtn:hover, #save_sensitivities:hover, #addUrlBtn:hover, #copy_all:hover, #get_js_links:hover, #removeAllBtn:hover, #discovered_parameters_header span:hover {

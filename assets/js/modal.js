@@ -3,14 +3,6 @@ function getQueryParam(param) {
   return urlParams.get(param);
 }
 
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
 
 document.getElementById("closeModalBtn").addEventListener("click", () => {
   document.getElementById("myModal").style.display = "none";
@@ -18,7 +10,8 @@ document.getElementById("closeModalBtn").addEventListener("click", () => {
 document.getElementById("get_js_links").addEventListener("click", () => {
   document.getElementById("myModal").style.display = "block";
   let progression = document.getElementById("progression")
-
+  let output = document.getElementById("output")
+  output.value = ""
 
 
   let numeric_progression = document.getElementById("numeric-progression")
@@ -45,7 +38,6 @@ document.getElementById("get_js_links").addEventListener("click", () => {
 
         const absoluteLinks = content.match(absoluteRegex);
         const relativeLinks = content.match(relativeRegex);
-        let output = document.getElementById("output")
         let output_links = output.value.split("\n")
         output_links = output_links.concat(absoluteLinks)
         output_links = output_links.concat(relativeLinks)
@@ -54,11 +46,13 @@ document.getElementById("get_js_links").addEventListener("click", () => {
         output_links.sort()
         output.value = output_links.join("\n")
         document.getElementsByClassName("links-number")[0].innerText = `${output_links.length} links`
+        document.getElementById("current_file").innerHTML = "Current file: " + new URL(link).pathname.split("/").reverse()[0]
         let progress = parseInt(progression.getAttribute("value"))
         progression.setAttribute("value", progress + 1)
         numeric_progression.innerText = `${progress + 1}/${scripts_number}`
 
       }).catch(e => {
+        document.getElementById("current_file").innerHTML = "Current file: " + new URL(link).pathname.split("/").reverse()[0]
         let progress = parseInt(progression.getAttribute("value"))
         progression.setAttribute("value", progress + 1)
         numeric_progression.innerText = `${progress + 1}/${scripts_number}`  

@@ -3,107 +3,107 @@
   <head>
     <meta charset="UTF-8">
 
-    <title>DOM Watcher</title>
+    <title>DOM Links Extractor</title>
+    <style>
+      h2 { margin-top: 40px; }
+      .page, .link {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .keyword {
+        background: #eee;
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 4px;
+        border-radius: 4px;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      .input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+      .backBtn {
+        padding: 10px 5px;
+        border: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      #addBtn, #addOriginBtn {
+        padding: 10px 15px;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      #addBtn:hover, #addOriginBtn:hover {
+        background-color: #45a049;
+      }
+
+      ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      li {
+        background: #fff;
+        padding: 10px 15px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #ddd;
+      }
+
+      .remove-btn, .origin-remove-btn {
+        background-color: #270400;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .remove-btn:hover, .origin-remove-btn:hover {
+        background: #c0392b;
+      }
+      
+    </style>
+    <link rel="stylesheet" href="assets/styles/style.css">
+    <link rel="stylesheet" href="assets/styles/modal.css">
   </head>
-  <style>
-    h2 { margin-top: 40px; }
-    .page, .link {
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .keyword {
-      background: #eee;
-      display: inline-block;
-      padding: 4px 8px;
-      margin: 4px;
-      border-radius: 4px;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 50px auto;
-      padding: 20px;
-      background: #f9f9f9;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    .input-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    .backBtn {
-      padding: 10px 5px;
-      border: none;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    #addBtn, #addOriginBtn {
-      padding: 10px 15px;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-
-    #addBtn:hover, #addOriginBtn:hover {
-      background-color: #45a049;
-    }
-
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    li {
-      background: #fff;
-      padding: 10px 15px;
-      margin-bottom: 8px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid #ddd;
-    }
-
-    .remove-btn, .origin-remove-btn {
-      background-color: #270400;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .remove-btn:hover, .origin-remove-btn:hover {
-      background: #c0392b;
-    }
-    
-  </style>
-  <link rel="stylesheet" href="assets/styles/style.css">
-  <link rel="stylesheet" href="assets/styles/modal.css">
   <body>
     <div class="main_dashboard">
       <div class="input-group">
@@ -198,9 +198,10 @@
       <div class="pagination">
 
       </div>
-      <div style="margin-top: 10px;">
+      <div class="buttons_container" style="margin-top: 10px;">
         <button id="copy_all">Copy all to clipboard</button>
         <button id="get_js_links">Extract links from JS files</button>
+        <button id="removeAllBtn">Remove all links</button>
       </div>
 
 
@@ -213,6 +214,9 @@
               <progress id="progression" value="0" max="100"></progress>
               <span id="numeric-progression">10/124</span>
             </div>
+          </div>
+          <div style="margin-bottom: 5px;">
+            <span id="current_file"></span>
           </div>
           <div>
             <textarea name="output" id="output"></textarea>
@@ -227,6 +231,7 @@
       <script src="assets/js/dashboard.js"></script>
       <script src="assets/js/sensitivities.js"></script>
       <script src="assets/js/modal.js"></script>
+      <script src="assets/js/helpers.js"></script>
     </div>
     <script src="assets/js/dash_checker.js"></script>
 </body>
