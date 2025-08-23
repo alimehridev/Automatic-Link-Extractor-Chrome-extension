@@ -39,6 +39,7 @@ chrome.storage.local.get("origins", (result) => {
               result["links"][origin] = arr
               chrome.runtime.sendMessage({ type: "setBadge", text: arr.length.toString() });
               chrome.storage.local.set({ ["links"]: result["links"] }, () => {
+                window.postMessage("continue");
               });
             })
           }
