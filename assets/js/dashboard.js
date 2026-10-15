@@ -49,6 +49,7 @@ async function loadOriginData(origin) {
       kw.className = "keyword";
       const a = document.createElement("a")
       a.href = `${link}`
+      a.setAttribute("target", "_blank")
       a.innerText = link
       a.style.color = "initial"
       kw.appendChild(a);

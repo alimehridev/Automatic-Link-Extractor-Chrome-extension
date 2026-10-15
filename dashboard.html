@@ -209,11 +209,11 @@
         <div class="modal-content">
           <span id="closeModalBtn" class="close-btn">&times;</span>
           <div class="js-file-list-section">
+            <div id="jsFileList" class="js-file-list"></div>
             <div class="js-file-list-header">
               <span id="jsFileCount">0 JS files</span>
               <button id="selectAllNoneBtn" class="select-toggle-btn">Select None</button>
             </div>
-            <div id="jsFileList" class="js-file-list"></div>
           </div>
           <div class="progress-div">
             <label for="file">Progress:</label>
@@ -228,9 +228,10 @@
           <div>
             <textarea name="output" id="output"></textarea>
           </div>
-          <span id="copyBtn">copy</span>
           <div class="info-bar">
             <span class="links-number">0 links</span>
+            <span id="copyBtn">copy</span>
+
           </div>
           <div class="modal-buttons">
             <button id="crawlBtn">Crawl</button>

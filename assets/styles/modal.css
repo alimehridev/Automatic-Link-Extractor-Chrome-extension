@@ -53,19 +53,21 @@
   resize: none;
 }
 
-.modal-content #copyBtn{
-    position: absolute;
-    bottom: 45px;
-    right: 40px;
-    background-color: white;
-    padding: 3px 4px;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
+.modal-content .info-bar #copyBtn{
+  background-color: #5b5b5b;
+  padding: 3px 4px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  position: absolute;
+  top: -28px;
+  right: 4px;
 }
 .modal-content .info-bar {
   display: flex;
-  justify-content: end;
+  justify-content: space-between;
+  position: relative;
 }
 
 .modal-content .modal-buttons {
@@ -116,12 +118,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 5px;
+  margin-top: 5px;
 }
 
 .js-file-list-header #jsFileCount {
-  font-size: 13px;
-  font-weight: bold;
+  font-size: 11px;
   color: #333;
 }
 

@@ -26,7 +26,7 @@ function renderJsFileList(links) {
     `;
     container.appendChild(div);
   });
-  document.getElementById("jsFileCount").innerText = `${links.length} JS files`;
+  document.getElementById("jsFileCount").innerText = `${links.length} javascript files`;
   updateSelectToggleText();
 }
 
@@ -124,7 +124,7 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       output_links.sort()
       output.value = output_links.join("\n")
       document.getElementsByClassName("links-number")[0].innerText = `${output_links.length} links`
-      document.getElementById("current_file").innerHTML = "Current file: " + new URL(link).pathname.split("/").reverse()[0]
+      document.getElementById("current_file").innerHTML = "Current file: " + link
       let progress = parseInt(progression.getAttribute("value"))
       progression.setAttribute("value", progress + 1)
       numeric_progression.innerText = `${progress + 1}/${scripts_number}`
@@ -132,10 +132,11 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       if (progress + 1 === scripts_number) {
         crawlBtn.innerText = "Crawl"
         crawlBtn.disabled = false
+        document.getElementById("current_file").innerHTML = ""
       }
 
     }).catch(e => {
-      document.getElementById("current_file").innerHTML = "Current file: " + new URL(link).pathname.split("/").reverse()[0]
+      document.getElementById("current_file").innerHTML = "Current file: " + link
       let progress = parseInt(progression.getAttribute("value"))
       progression.setAttribute("value", progress + 1)
       numeric_progression.innerText = `${progress + 1}/${scripts_number}`
