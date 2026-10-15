@@ -74,7 +74,7 @@
 .modal-content .modal-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 2px;
 }
 
 .modal-content .modal-buttons button, .modal-content .progress-div button {
@@ -114,6 +114,7 @@
 /* JS File List */
 .js-file-list-section {
   margin-bottom: 10px;
+  margin-top: 15px;
 }
 
 .js-file-list-header {

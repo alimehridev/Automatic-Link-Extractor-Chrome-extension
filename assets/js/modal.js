@@ -58,7 +58,7 @@ document.getElementById("get_js_links").addEventListener("click", () => {
 
   chrome.storage.local.get("links", (result) => {
     let links = result["links"][getQueryParam("origin")] || [];
-    jsLinksCache = links.filter(l => l.endsWith(".js"));
+    jsLinksCache = links.filter(l => (l.endsWith(".js") && l.startsWith("http")));
     renderJsFileList(jsLinksCache);
   })
 })
