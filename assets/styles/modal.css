@@ -68,6 +68,7 @@
   display: flex;
   justify-content: space-between;
   position: relative;
+  flex-direction: row-reverse;
 }
 
 .modal-content .modal-buttons {
@@ -76,7 +77,7 @@
   margin-top: 10px;
 }
 
-.modal-content .modal-buttons button {
+.modal-content .modal-buttons button, .modal-content .progress-div button {
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
@@ -86,16 +87,16 @@
   transition: background-color 0.2s;
 }
 
-.modal-content .modal-buttons #crawlBtn {
+.modal-content .progress-div #crawlBtn {
   background-color: #4CAF50;
   color: white;
 }
 
-.modal-content .modal-buttons #crawlBtn:hover {
+.modal-content .progress-div #crawlBtn:hover {
   background-color: #45a049;
 }
 
-.modal-content .modal-buttons #crawlBtn:disabled {
+.modal-content .progress-div #crawlBtn:disabled {
   background-color: #999;
   cursor: not-allowed;
 }
@@ -103,6 +104,7 @@
 .modal-content .modal-buttons #addLinksToTargetBtn {
   background-color: #2196F3;
   color: white;
+  flex: 1;
 }
 
 .modal-content .modal-buttons #addLinksToTargetBtn:hover {
