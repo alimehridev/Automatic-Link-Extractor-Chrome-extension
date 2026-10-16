@@ -15,12 +15,18 @@ function renderJsFileList(links) {
     } catch (e) {
       filename = link.split("/").reverse()[0];
     }
+    let short_name = link
+    if(link.length > 48){
+      let first_slice = link.slice(0, 24)
+      let last_slice = link.split("").reverse().join("").slice(0,24).split("").reverse().join("")
+      short_name = first_slice + "..." + last_slice
+    }
     let div = document.createElement("div");
     div.className = "js-file-item";
     div.innerHTML = `
       <label class="js-file-label">
         <input type="checkbox" class="js-file-chbox" data-index="${index}" checked>
-        <span class="js-file-name" title="${link}">${link}</span>
+        <span class="js-file-name" title="${link}">${short_name}</span>
       </label>
       <span class="js-status-code"></span>
       <a href="${link}" target="_blank" class="js-file-open-btn">open</a>
@@ -172,7 +178,7 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       }
     }).then(async response => {
       let content = await response.text()
-      let status_code_el = [...document.querySelectorAll(".js-file-name")].filter(i => i.innerText===link)[0].parentElement.nextElementSibling
+      let status_code_el = [...document.querySelectorAll(".js-file-name")].filter(i => i.getAttribute("title")===link)[0].parentElement.nextElementSibling
       status_code_el.innerText = response.status
       if(response.status === 200){
         status_code_el.style.color = "#00a900"

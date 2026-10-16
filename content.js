@@ -92,9 +92,42 @@ function readNodeLinks(node, out) {
   }
 }
 
+// Start watching as early as possible (document_start). Nodes that appear while
+// the page is parsing and are removed again before the settings/worker are ready
+// are kept as references here, so their links can still be read afterwards.
+// The saved sensitivity config only controls observation after settings load.
+const earlyNodes = [];
+const earlyObserver = new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (node.nodeType === Node.ELEMENT_NODE) earlyNodes.push(node);
+    }
+  }
+});
+earlyObserver.observe(document, { childList: true, subtree: true });
+
+function drainEarlyNodes() {
+  const nodes = earlyNodes.slice();
+  earlyNodes.length = 0;
+  // Records that have not been delivered yet still hold their added nodes.
+  for (const record of earlyObserver.takeRecords()) {
+    for (const node of record.addedNodes) {
+      if (node.nodeType === Node.ELEMENT_NODE) nodes.push(node);
+    }
+  }
+  earlyObserver.disconnect();
+  return nodes;
+}
+
+function readWholeDocument(out) {
+  readRootLinks(document.documentElement, out);
+  readFrameLinks(document, out);
+}
+
 chrome.storage.local.get("origins", (result) => {
   const arr = result["origins"] || [];
   if (!arr.includes(origin)) {
+    drainEarlyNodes();
     chrome.runtime.sendMessage({ type: "setBadge", text: "off" });
     return;
   }
@@ -114,7 +147,10 @@ chrome.storage.local.get("origins", (result) => {
       ...defaults,
       ...Object.fromEntries(Object.entries(s).map(([k, v]) => [k, Boolean(v)]))
     };
-    if (Object.values(config).every(val => val === false)) return;
+    if (Object.values(config).every(val => val === false)) {
+      drainEarlyNodes();
+      return;
+    }
 
     async function createWorker(path) {
       const response = await fetch(chrome.runtime.getURL(path));
@@ -228,18 +264,40 @@ chrome.storage.local.get("origins", (result) => {
         }
       });
 
+      // Attach the real observer. At document_start the <html> element (and
+      // even <head>) may not exist yet, so wait for documentElement first.
+      function startObserving() {
+        if (document.documentElement) {
+          observeRoot(document.documentElement);
+          return;
+        }
+        const ready = new MutationObserver(() => {
+          if (!document.documentElement) return;
+          ready.disconnect();
+          const found = new Set();
+          readWholeDocument(found);
+          queue(found);
+          observeRoot(document.documentElement);
+        });
+        ready.observe(document, { childList: true, subtree: true });
+      }
+
       worker.onmessage = function (event) {
         persist(event.data);
       };
 
-      // Read what already exists (head included, shadow DOM and same-origin
-      // iframes included), then watch for changes.
+      // 1) Everything the early observer saw while the page was parsing.
       const initial = new Set();
-      readRootLinks(document.documentElement, initial);
-      readFrameLinks(document, initial);
+      for (const node of drainEarlyNodes()) {
+        readNodeLinks(node, initial);
+      }
+      // 2) Whatever is in the document right now (head included, shadow DOM and
+      //    same-origin iframes included).
+      readWholeDocument(initial);
       queue(initial);
 
-      observeRoot(document.documentElement);
+      // 3) Watch for changes from now on.
+      startObserving();
     });
   });
 });
