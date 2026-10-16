@@ -22,6 +22,7 @@ function renderJsFileList(links) {
         <input type="checkbox" class="js-file-chbox" data-index="${index}" checked>
         <span class="js-file-name" title="${link}">${link}</span>
       </label>
+      <span class="js-status-code"></span>
       <a href="${link}" target="_blank" class="js-file-open-btn">open</a>
     `;
     container.appendChild(div);
@@ -171,6 +172,11 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       }
     }).then(async response => {
       let content = await response.text()
+      let status_code_el = [...document.querySelectorAll(".js-file-name")].filter(i => i.innerText===link)[0].parentElement.nextElementSibling
+      status_code_el.innerText = response.status
+      if(response.status === 200){
+        status_code_el.style.color = "#00a900"
+      }
       let include_regexes = [...document.querySelector(".regex-include").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
       let exclude_regexes = [...document.querySelector(".regex-exclude").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
       const absoluteRegex = /(?:\b(?:https?:\/\/|ftp:\/\/|\/\/)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s"'<>\]\)]*)?\b)/g;
