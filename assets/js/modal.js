@@ -5,6 +5,21 @@ function getQueryParam(param) {
 
 let jsLinksCache = [];
 
+// URLs in code/comment text are often followed by sentence punctuation.
+function stripTrailingPunctuation(link) {
+  return link.replace(/[.,;:!?)\]}'"]+$/, "");
+}
+
+// Regex extraction is heuristic, so let the URL parser confirm each candidate.
+function isValidLink(link) {
+  try {
+    new URL(link, "https://base.invalid/");
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function renderJsFileList(links) {
   let container = document.getElementById("jsFileList");
   container.innerHTML = "";
@@ -164,12 +179,6 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
     crawlBtn.disabled = false
     return
   }
-
-  //Include Regexes
-  
-  //Exclude Regexes
-  
-
   links.forEach(link => {
     fetch(link, {
       method: 'GET',
@@ -185,16 +194,20 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       }
       let include_regexes = [...document.querySelector(".regex-include").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
       let exclude_regexes = [...document.querySelector(".regex-exclude").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
-      const absoluteRegex = /(?:\b(?:https?:\/\/|ftp:\/\/|\/\/)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s"'<>\]\)]*)?\b)/g;
-      const relativeRegex = /\b(?:\/|\.\/|\.\.\/)[^\s"'<>\]\)]*\b/g;
+      // Absolute: any listed scheme, or a protocol-relative //host URL.
+      const absoluteRegex = /(?:(?:https?|ftps?|wss?):)?\/\/[^\s"'`<>\\^|{}\[\]]+/gi;
+      // Relative: only when it is a whole quoted string literal, so it cannot
+      // re-match the path part of an absolute URL.
+      const relativeRegex = /["'`]((?:\.\.?\/|\/(?!\/))[^"'`\s\\]*)["'`]/g;
 
-      const absoluteLinks = content.match(absoluteRegex) || [];
-      const relativeLinks = content.match(relativeRegex) || [];
+      const absoluteLinks = (content.match(absoluteRegex) || []).map(stripTrailingPunctuation);
+      const relativeLinks = [...content.matchAll(relativeRegex)].map(m => m[1]);
       let output_links = output.value.split("\n").filter(item => item.length > 0)
       output_links = output_links.concat(absoluteLinks)
       output_links = output_links.concat(relativeLinks)
       output_links = [...new Set(output_links)]
       output_links = output_links.filter(item => item.length > 0)
+      output_links = output_links.filter(isValidLink)
       if((include_regexes.length > 0)){
         output_links = output_links.filter(link =>
             include_regexes.some(pattern => new RegExp(pattern, 'i').test(link))
