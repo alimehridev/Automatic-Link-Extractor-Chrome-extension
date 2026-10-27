@@ -57,12 +57,12 @@ addOriginBtn.addEventListener("click", () => {
         
         if (!Object.keys(arr).includes(value)) {
             arr[value] = {
-                childList: 0,
-                subtree: 0,
-                attributes: 0,
-                attributeOldValue: 0,
-                characterData: 0,
-                characterDataOldValue: 0
+                childList: 1,
+                subtree: 1,
+                attributes: 1,
+                attributeOldValue: 1,
+                characterData: 1,
+                characterDataOldValue: 1
             }
         }
 
