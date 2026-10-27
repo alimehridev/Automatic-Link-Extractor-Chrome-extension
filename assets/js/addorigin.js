@@ -89,7 +89,7 @@ addOriginBtn.addEventListener("click", () => {
 
         chrome.storage.local.set({ ["links"]: arr }, () => {});
     });
-
+    window.location.href = window.location.origin + window.location.pathname + `?origin=${value}`
 });
 
 // Optional: add keyword on Enter
