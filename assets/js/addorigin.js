@@ -68,6 +68,18 @@ addOriginBtn.addEventListener("click", () => {
 
         chrome.storage.local.set({ ["sensitivities"]: arr }, () => {});
     });
+    chrome.storage.local.get("regexes", (result) => {
+        const arr = result["regexes"] || {};
+        
+        if (!Object.keys(arr).includes(value)) {
+            arr[value] = {
+                includes: [],
+                excludes: []
+            }
+        }
+
+        chrome.storage.local.set({ ["regexes"]: arr }, () => {});
+    });
     chrome.storage.local.get("links", (result) => {
         const arr = result["links"] || {};
         

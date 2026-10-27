@@ -20,6 +20,16 @@ function isValidLink(link) {
   }
 }
 
+// Resolve a candidate URL against the URL of the file it was found in.
+// "/x" -> file origin, "./x"/"../x" -> file directory, "//host" -> file scheme.
+function resolveAgainst(baseUrl, value) {
+  try {
+    return new URL(value, baseUrl).href;
+  } catch (e) {
+    return null;
+  }
+}
+
 function renderJsFileList(links) {
   let container = document.getElementById("jsFileList");
   container.innerHTML = "";
@@ -200,8 +210,18 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       // re-match the path part of an absolute URL.
       const relativeRegex = /["'`]((?:\.\.?\/|\/(?!\/))[^"'`\s\\]*)["'`]/g;
 
-      const absoluteLinks = (content.match(absoluteRegex) || []).map(stripTrailingPunctuation);
-      const relativeLinks = [...content.matchAll(relativeRegex)].map(m => m[1]);
+      const fileUrl = response.url || link; // final URL after redirects
+
+      const absoluteLinks = (content.match(absoluteRegex) || [])
+        .map(stripTrailingPunctuation)
+        .map(v => resolveAgainst(fileUrl, v))
+        .filter(Boolean);
+
+      const relativeLinks = [...content.matchAll(relativeRegex)]
+        .map(m => m[1])
+        .map(v => resolveAgainst(fileUrl, v))
+        .filter(Boolean);
+
       let output_links = output.value.split("\n").filter(item => item.length > 0)
       output_links = output_links.concat(absoluteLinks)
       output_links = output_links.concat(relativeLinks)
