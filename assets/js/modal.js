@@ -3,6 +3,21 @@ function getQueryParam(param) {
   return urlParams.get(param);
 }
 
+function save_regex_to_storage(){
+  let include_regexes = [...document.querySelector(".regex-include").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
+  let exclude_regexes = [...document.querySelector(".regex-exclude").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
+
+  chrome.storage.local.get("regexes", (result) => {
+      const arr = result["regexes"] || {};
+
+      arr[getQueryParam("origin")] = {
+        includes: [...include_regexes, "YOUR_REGEX"],
+        excludes: [...exclude_regexes, "YOUR_REGEX"]
+      }
+      chrome.storage.local.set({ ["regexes"]: arr }, () => {});
+  });
+}
+
 let jsLinksCache = [];
 
 // URLs in code/comment text are often followed by sentence punctuation.
@@ -91,64 +106,69 @@ document.getElementById("get_js_links").addEventListener("click", () => {
     jsLinksCache = links.filter(l => (l.includes(".js") && l.startsWith("http")));
     renderJsFileList(jsLinksCache);
   })
-
   let el1 = document.getElementsByClassName("add-regex-include")[0]
   let custom_regexes = el1.parentElement.nextElementSibling
-  if(custom_regexes.querySelectorAll(".custom-regex").length === 0){
-    try{
-      if(custom_regexes.querySelectorAll(".custom-regex")[custom_regexes.querySelectorAll(".custom-regex").length - 1].querySelector(".regex-value").innerText == "YOUR_REGEX"){
-          return
-        }
-    }catch{}
-    
-    let custom_regex = document.createElement("div")
-    custom_regex.classList.add("custom-regex")
-    custom_regex.appendChild(document.createTextNode(" / "))
-    let regex_value_span = document.createElement("span")
-    regex_value_span.setAttribute("contenteditable", "true")
-    regex_value_span.classList.add("regex-value")
-    regex_value_span.innerHTML = "YOUR_REGEX"
-    custom_regex.appendChild(regex_value_span)
-    custom_regex.appendChild(document.createTextNode(" /g "))
-    let remove_regex_span = document.createElement("span")
-    remove_regex_span.innerHTML = "-"
-    remove_regex_span.classList.add("regex-remove-btn")
-    custom_regex.appendChild(remove_regex_span)
-    remove_regex_span.addEventListener("click", () => {
-      custom_regex.remove()
+  custom_regexes.innerHTML = ""
+  chrome.storage.local.get("regexes", (result) => {
+    let regexes = result["regexes"][getQueryParam("origin")] || [];
+    regexes.includes.forEach(re => {
+      let el1 = document.getElementsByClassName("add-regex-include")[0]
+      let custom_regexes = el1.parentElement.nextElementSibling
+      let custom_regex = document.createElement("div")
+      custom_regex.classList.add("custom-regex")
+      custom_regex.appendChild(document.createTextNode(" / "))
+      let regex_value_span = document.createElement("span")
+      regex_value_span.setAttribute("contenteditable", "true")
+      regex_value_span.classList.add("regex-value")
+      regex_value_span.innerHTML = re
+      custom_regex.appendChild(regex_value_span)
+      
+      regex_value_span.addEventListener("keyup", (ev) => {
+        save_regex_to_storage()
+      })
+      
+      custom_regex.appendChild(document.createTextNode(" /g "))
+      let remove_regex_span = document.createElement("span")
+      remove_regex_span.innerHTML = "-"
+      remove_regex_span.classList.add("regex-remove-btn")
+      custom_regex.appendChild(remove_regex_span)
+      remove_regex_span.addEventListener("click", () => {
+        custom_regex.remove()
+        save_regex_to_storage()
+      })
+      custom_regexes.appendChild(custom_regex)
     })
-    custom_regexes.appendChild(custom_regex)
-  }
-  
+    let el2 = document.getElementsByClassName("add-regex-exclude")[0]
+    custom_regexes = el2.parentElement.nextElementSibling
+    custom_regexes.innerHTML = ""
+    regexes.excludes.forEach(re => {
+      let el2 = document.getElementsByClassName("add-regex-exclude")[0]
+      custom_regexes = el2.parentElement.nextElementSibling
+      let custom_regex = document.createElement("div")
+      custom_regex.classList.add("custom-regex")
+      custom_regex.appendChild(document.createTextNode(" / "))
+      regex_value_span = document.createElement("span")
+      regex_value_span.setAttribute("contenteditable", "true")
+      regex_value_span.classList.add("regex-value")
+      regex_value_span.innerHTML = re
+      custom_regex.appendChild(regex_value_span)
 
-  let el2 = document.getElementsByClassName("add-regex-exclude")[0]
-  custom_regexes = el2.parentElement.nextElementSibling
-  if(custom_regexes.querySelectorAll(".custom-regex").length === 0){
-    try{
-      if(custom_regexes.querySelectorAll(".custom-regex")[custom_regexes.querySelectorAll(".custom-regex").length - 1].querySelector(".regex-value").innerText == "YOUR_REGEX"){
-          return
-        }
-    }catch{}
-    
-    custom_regex = document.createElement("div")
-    custom_regex.classList.add("custom-regex")
-    custom_regex.appendChild(document.createTextNode(" / "))
-    regex_value_span = document.createElement("span")
-    regex_value_span.setAttribute("contenteditable", "true")
-    regex_value_span.classList.add("regex-value")
-    regex_value_span.innerHTML = "YOUR_REGEX"
-    custom_regex.appendChild(regex_value_span)
-    custom_regex.appendChild(document.createTextNode(" /g "))
-    remove_regex_span = document.createElement("span")
-    remove_regex_span.innerHTML = "-"
-    remove_regex_span.classList.add("regex-remove-btn")
-    custom_regex.appendChild(remove_regex_span)
-    remove_regex_span.addEventListener("click", () => {
-      custom_regex.remove()
+      regex_value_span.addEventListener("keyup", (ev) => {
+        save_regex_to_storage()
+      })
+
+      custom_regex.appendChild(document.createTextNode(" /g "))
+      remove_regex_span = document.createElement("span")
+      remove_regex_span.innerHTML = "-"
+      remove_regex_span.classList.add("regex-remove-btn")
+      custom_regex.appendChild(remove_regex_span)
+      remove_regex_span.addEventListener("click", () => {
+        custom_regex.remove()
+        save_regex_to_storage()
+      })
+      custom_regexes.appendChild(custom_regex)
     })
-    custom_regexes.appendChild(custom_regex)
-  }
-  
+  })
 })
 
 document.getElementById("selectAllNoneBtn").addEventListener("click", () => {
@@ -308,6 +328,11 @@ document.getElementsByClassName("add-regex-include")[0].addEventListener("click"
   regex_value_span.classList.add("regex-value")
   regex_value_span.innerHTML = "YOUR_REGEX"
   custom_regex.appendChild(regex_value_span)
+
+  regex_value_span.addEventListener("keyup", (ev) => {
+    save_regex_to_storage()
+  })
+  
   custom_regex.appendChild(document.createTextNode(" /g "))
   let remove_regex_span = document.createElement("span")
   remove_regex_span.innerHTML = "-"
@@ -335,6 +360,11 @@ document.getElementsByClassName("add-regex-exclude")[0].addEventListener("click"
   regex_value_span.classList.add("regex-value")
   regex_value_span.innerHTML = "YOUR_REGEX"
   custom_regex.appendChild(regex_value_span)
+  
+  regex_value_span.addEventListener("keyup", (ev) => {
+    save_regex_to_storage()
+  })
+
   custom_regex.appendChild(document.createTextNode(" /g "))
   let remove_regex_span = document.createElement("span")
   remove_regex_span.innerHTML = "-"
