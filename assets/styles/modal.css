@@ -14,7 +14,7 @@
 
 .modal-content {
   background-color: #fff;
-  margin: 10% auto;
+  margin: 3% auto;
   padding: 20px;
   border-radius: 8px;
   width: 500px;
@@ -212,12 +212,12 @@
   margin-top: 5px;
   margin-left: 2px;
 }
-.crawler-options .regex {
+.crawler-options .regex, .crawler-options .other-opt {
   margin-top: 14px;
   border-top: 1px solid lightgray;
   position: relative;
 } 
-.crawler-options .regex .span-title {
+.crawler-options .regex .span-title, .crawler-options .other-opt .span-title {
   position: absolute;
   top: -8px;
   background-color: white;

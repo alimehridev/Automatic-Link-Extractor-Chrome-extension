@@ -191,7 +191,8 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
   let output = document.getElementById("output")
   let numeric_progression = document.getElementById("numeric-progression")
   let crawlBtn = document.getElementById("crawlBtn")
-
+  let decodeURLCheckBox = document.getElementById("decode-urls").checked
+  let addBaseURLCheckBox = document.getElementById("base-url-predict").checked
   let links = getCheckedLinks();
   let scripts_number = links.length;
 
@@ -257,6 +258,9 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
         output_links = output_links.filter(link => !exclude_regexes.some(p => new RegExp(p, "i").test(link)))
       }
       output_links.sort()
+      if(decodeURLCheckBox){
+        output_links = output_links.map(i => decodeURIComponent(i))
+      }
       output.value = output_links.join("\n")
       document.getElementsByClassName("links-number")[0].innerText = `${output_links.length} links`
       document.getElementById("current_file").innerHTML = "Current file: " + link
