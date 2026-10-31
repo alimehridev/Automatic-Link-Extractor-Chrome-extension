@@ -602,3 +602,6 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **Origins & Subdomains Extractor:** Added `#extract_subdomains` button, `#subdomainModal`, and
   `assets/js/subdomains.js`. Displays all discovered origins by default, with an optional `#only-tld-subdomains`
   checkbox for root domain eTLD+1 subdomains, protocol toggle, and a live `#refetchSubdomainsBtn`.
+- **In-Memory Regex Filtering in Subdomains Modal:** Added Include and Exclude regex filters to
+  `#subdomainModal` replicating the JS crawler UI (`.custom-regex` pills with `contenteditable` and remove button),
+  applying live regex matching to displayed origins/subdomains without persisting to storage.

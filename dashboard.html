@@ -273,8 +273,18 @@
             Target Root Domain: <strong id="subdomainRootDomain" style="color: #0066ff;">-</strong>
           </div>
           <div class="crawler-options" style="margin-bottom: 12px;">
-            <div class="other-opt" style="padding: 10px 5px 2px 5px; margin-top: 5px;">
-              <span class="span-title">Filter Options</span>
+            <div class="regex regex-subdomain-include">
+              <span class="span-title">Include regexes<span class="add-regex add-subdomain-regex-include">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="regex regex-subdomain-exclude">
+              <span class="span-title">Exclude regexes<span class="add-regex add-subdomain-regex-exclude">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="other-opt" style="padding: 10px 5px 2px 5px; margin-top: 14px;">
+              <span class="span-title">Other options</span>
               <div style="display: flex; margin-bottom: 7px; align-items: center;">
                 <input type="checkbox" name="only-tld-subdomains" id="only-tld-subdomains" style="margin-right: 6px; cursor: pointer;">
                 <label for="only-tld-subdomains" style="cursor: pointer; font-size: 13px;">Only show TLD+1 subdomains (<span id="subdomainRootDomainLabel">-</span>)</label>

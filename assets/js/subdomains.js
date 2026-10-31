@@ -2,6 +2,7 @@
  * Subdomain & Origin Extractor for Automatic Link Extractor
  * By default extracts all unique origins/domains across all stored links.
  * When "Only TLD+1 subdomains" is checked, filters strictly to subdomains of the target's root domain.
+ * Supports in-memory Include and Exclude regex filters with the same UI and style as the JS crawler.
  */
 
 const MULTI_PART_TLDS = new Set([
@@ -65,7 +66,7 @@ function getRootDomain(hostname) {
 }
 
 function extractOriginsOrSubdomains(links, rootDomain, options = {}) {
-  const { onlyTld = false, includeProtocol = false } = options;
+  const { onlyTld = false, includeProtocol = false, includes = [], excludes = [] } = options;
   if (!Array.isArray(links)) return [];
   const root = (rootDomain || '').toLowerCase();
   const results = new Set();
@@ -96,18 +97,42 @@ function extractOriginsOrSubdomains(links, rootDomain, options = {}) {
       if (!isSub) continue;
     }
 
-    if (includeProtocol) {
-      results.add(urlObj.origin);
-    } else {
-      results.add(hostname);
-    }
+    const value = includeProtocol ? urlObj.origin : hostname;
+    results.add(value);
   }
 
-  return Array.from(results).sort();
+  let items = Array.from(results);
+
+  if (Array.isArray(includes) && includes.length > 0) {
+    items = items.filter(item =>
+      includes.some(pattern => {
+        try {
+          return new RegExp(pattern, 'i').test(item);
+        } catch (e) {
+          return false;
+        }
+      })
+    );
+  }
+
+  if (Array.isArray(excludes) && excludes.length > 0) {
+    items = items.filter(item =>
+      !excludes.some(pattern => {
+        try {
+          return new RegExp(pattern, 'i').test(item);
+        } catch (e) {
+          return false;
+        }
+      })
+    );
+  }
+
+  return items.sort();
 }
 
 // UI Setup and Event Handlers
-document.addEventListener("DOMContentLoaded", () => {
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
   const extractBtn = document.getElementById("extract_subdomains");
   const modal = document.getElementById("subdomainModal");
   const closeBtn = document.getElementById("closeSubdomainModalBtn");
@@ -121,18 +146,89 @@ document.addEventListener("DOMContentLoaded", () => {
   const onlyTldCheckbox = document.getElementById("only-tld-subdomains");
   const includeProtocolCheckbox = document.getElementById("include-protocol");
 
+  const includeAddBtn = document.querySelector(".add-subdomain-regex-include");
+  const excludeAddBtn = document.querySelector(".add-subdomain-regex-exclude");
+  const includeContainer = document.querySelector(".regex-subdomain-include .custom-regexes");
+  const excludeContainer = document.querySelector(".regex-subdomain-exclude .custom-regexes");
+
   if (!extractBtn || !modal) return;
 
   let cachedLinks = [];
   let currentRootDomain = "";
 
+  function getRegexList(container) {
+    if (!container) return [];
+    return [...container.querySelectorAll(".custom-regex")]
+      .map(el => {
+        const valEl = el.querySelector(".regex-value");
+        return valEl ? valEl.innerText.trim() : "";
+      })
+      .filter(val => val && val !== "YOUR_REGEX");
+  }
+
+  function addRegexPill(container) {
+    if (!container) return;
+    try {
+      const existing = container.querySelectorAll(".custom-regex");
+      if (existing.length > 0) {
+        const lastVal = existing[existing.length - 1].querySelector(".regex-value").innerText;
+        if (lastVal === "YOUR_REGEX") return;
+      }
+    } catch (e) {}
+
+    const customRegex = document.createElement("div");
+    customRegex.classList.add("custom-regex");
+    customRegex.appendChild(document.createTextNode(" / "));
+
+    const regexValueSpan = document.createElement("span");
+    regexValueSpan.setAttribute("contenteditable", "true");
+    regexValueSpan.classList.add("regex-value");
+    regexValueSpan.innerHTML = "YOUR_REGEX";
+    customRegex.appendChild(regexValueSpan);
+
+    regexValueSpan.addEventListener("keyup", () => {
+      renderOutput();
+    });
+
+    customRegex.appendChild(document.createTextNode(" /g "));
+
+    const removeRegexSpan = document.createElement("span");
+    removeRegexSpan.innerHTML = "-";
+    removeRegexSpan.classList.add("regex-remove-btn");
+    customRegex.appendChild(removeRegexSpan);
+
+    removeRegexSpan.addEventListener("click", () => {
+      customRegex.remove();
+      renderOutput();
+    });
+
+    container.appendChild(customRegex);
+    renderOutput();
+  }
+
+  if (includeAddBtn && includeContainer) {
+    includeAddBtn.addEventListener("click", () => {
+      addRegexPill(includeContainer);
+    });
+  }
+
+  if (excludeAddBtn && excludeContainer) {
+    excludeAddBtn.addEventListener("click", () => {
+      addRegexPill(excludeContainer);
+    });
+  }
+
   function renderOutput() {
     const onlyTld = onlyTldCheckbox ? onlyTldCheckbox.checked : false;
     const includeProtocol = includeProtocolCheckbox ? includeProtocolCheckbox.checked : false;
+    const includes = getRegexList(includeContainer);
+    const excludes = getRegexList(excludeContainer);
 
     const items = extractOriginsOrSubdomains(cachedLinks, currentRootDomain, {
       onlyTld,
-      includeProtocol
+      includeProtocol,
+      includes,
+      excludes
     });
 
     outputTextarea.value = items.join("\n");
@@ -228,3 +324,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    MULTI_PART_TLDS,
+    extractHostnameFromPattern,
+    getRootDomain,
+    extractOriginsOrSubdomains
+  };
+}
