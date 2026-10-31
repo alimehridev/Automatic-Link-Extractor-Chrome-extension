@@ -1,95 +1,79 @@
 const input = document.getElementById("originInput");
 const addOriginBtn = document.getElementById("addOriginBtn");
 const originList = document.getElementById("data");
+const dataDiv = document.getElementById("data");
 
-function remove_origin_from_list(payload){
-    chrome.storage.local.get("origins", (result) => {
+function remove_origin_from_list(payload) {
+    chrome.storage.local.get(["origins", "sensitivities", "regexes", "links"], (result) => {
         if (!result["origins"] || result["origins"].length === 0) return;
 
-        const updated = result["origins"].filter((item) => item !== payload);
-        chrome.storage.local.set({ ["origins"]: updated }, () => {
-            location.reload()
+        const updatedOrigins = result["origins"].filter((item) => item !== payload);
+        const sensitivities = result["sensitivities"] || {};
+        const regexes = result["regexes"] || {};
+        const links = result["links"] || {};
+
+        delete sensitivities[payload];
+        delete regexes[payload];
+        delete links[payload];
+
+        chrome.storage.local.set({
+            origins: updatedOrigins,
+            sensitivities: sensitivities,
+            regexes: regexes,
+            links: links
+        }, () => {
+            location.reload();
         });
     });
 }
-
 
 addOriginBtn.addEventListener("click", () => {
     const value = input.value.trim();
     if (value === "") return;
 
-    const pageDiv = document.createElement("div");
-    pageDiv.className = "page";
-    const kw = document.createElement("div");
-    kw.className = "keyword";
-    const a = document.createElement("a")
-    a.href = `?origin=${value}`
-    a.innerText = value
-    a.style.color = "initial"
-    kw.appendChild(a);
-    pageDiv.appendChild(kw)
-
-    let remove_url_btn = document.createElement("span")
-    remove_url_btn.classList.add("removeLogBtn")
-    remove_url_btn.addEventListener("click", () => {
-        remove_origin_from_list(value)
-    })
-    remove_url_btn.innerText = "x"
-    pageDiv.appendChild(remove_url_btn)
-
-    dataDiv.appendChild(pageDiv)
     input.value = "";
 
-    chrome.storage.local.get("origins", (result) => {
-        const arr = result["origins"] || [];
-        
-        if (!arr.includes(value)) {
-            arr.push(value);
+    chrome.storage.local.get(["origins", "sensitivities", "regexes", "links"], (result) => {
+        const origins = result["origins"] || [];
+        const sensitivities = result["sensitivities"] || {};
+        const regexes = result["regexes"] || {};
+        const links = result["links"] || {};
+
+        if (!origins.includes(value)) {
+            origins.push(value);
         }
 
-        chrome.storage.local.set({ ["origins"]: arr }, () => {
-            console.log("Added:", value);
-        });
-    });
-
-    chrome.storage.local.get("sensitivities", (result) => {
-        const arr = result["sensitivities"] || {};
-        
-        if (!Object.keys(arr).includes(value)) {
-            arr[value] = {
+        if (!Object.keys(sensitivities).includes(value)) {
+            sensitivities[value] = {
                 childList: 1,
                 subtree: 1,
                 attributes: 1,
                 attributeOldValue: 1,
                 characterData: 1,
                 characterDataOldValue: 1
-            }
+            };
         }
 
-        chrome.storage.local.set({ ["sensitivities"]: arr }, () => {});
-    });
-    chrome.storage.local.get("regexes", (result) => {
-        const arr = result["regexes"] || {};
-        
-        if (!Object.keys(arr).includes(value)) {
-            arr[value] = {
+        if (!Object.keys(regexes).includes(value)) {
+            regexes[value] = {
                 includes: [],
                 excludes: []
-            }
+            };
         }
 
-        chrome.storage.local.set({ ["regexes"]: arr }, () => {});
-    });
-    chrome.storage.local.get("links", (result) => {
-        const arr = result["links"] || {};
-        
-        if (!Object.keys(arr).includes(value)) {
-            arr[value] = []
+        if (!Object.keys(links).includes(value)) {
+            links[value] = [];
         }
 
-        chrome.storage.local.set({ ["links"]: arr }, () => {});
+        chrome.storage.local.set({
+            origins: origins,
+            sensitivities: sensitivities,
+            regexes: regexes,
+            links: links
+        }, () => {
+            window.location.href = window.location.origin + window.location.pathname + `?origin=${encodeURIComponent(value)}`;
+        });
     });
-    window.location.href = window.location.origin + window.location.pathname + `?origin=${value}`
 });
 
 // Optional: add keyword on Enter
@@ -97,35 +81,31 @@ input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") addOriginBtn.click();
 });
 
-
-
-const dataDiv = document.getElementById("data");
 dataDiv.innerHTML = "";
 chrome.storage.local.get("origins", (result) => {
     if (!result["origins"] || result["origins"].length === 0) return;
-    let origins = result['origins']
-    origins.reverse()
+    let origins = result['origins'] || [];
+    origins = origins.slice().reverse();
     origins.forEach((item) => { 
         const pageDiv = document.createElement("div");
         pageDiv.className = "page";
         const kw = document.createElement("div");
         kw.className = "keyword";
-        const a = document.createElement("a")
-        a.href = `?origin=${item}`
-        a.innerText = item
-        a.style.color = "initial"
+        const a = document.createElement("a");
+        a.href = `?origin=${encodeURIComponent(item)}`;
+        a.innerText = item;
+        a.style.color = "initial";
         kw.appendChild(a);
-        pageDiv.appendChild(kw)
+        pageDiv.appendChild(kw);
 
-        let remove_url_btn = document.createElement("span")
-        remove_url_btn.classList.add("removeLogBtn")
+        let remove_url_btn = document.createElement("span");
+        remove_url_btn.classList.add("removeLogBtn");
         remove_url_btn.addEventListener("click", () => {
-            remove_origin_from_list(item)
-        })
-        remove_url_btn.innerText = "x"
-        pageDiv.appendChild(remove_url_btn)
+            remove_origin_from_list(item);
+        });
+        remove_url_btn.innerText = "x";
+        pageDiv.appendChild(remove_url_btn);
 
-        dataDiv.appendChild(pageDiv)
-    })
-    
+        dataDiv.appendChild(pageDiv);
+    });
 });

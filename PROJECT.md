@@ -48,6 +48,7 @@ Automatic Link Extractor - Chrome extension/
 ├── worker.js                  # Web Worker: normalizes/dedupes URLs sent by content.js
 ├── dashboard.html             # Extension dashboard page (list origins, links, JS crawler modal)
 ├── README.md                  # User-facing readme
+├── PROJECT_DOCUMENTATION.md   # Comprehensive Persian documentation & knowledge base
 ├── PROJECT.md                 # ← this file
 ├── todos                      # Empty placeholder file (unused)
 └── assets/
@@ -56,6 +57,7 @@ Automatic Link Extractor - Chrome extension/
     │   ├── style.css          # Dashboard + shared styles
     │   └── modal.css          # JS-crawler modal styles
     └── js/
+        ├── pattern_matcher.js # Wildcard pattern parser and URL matcher
         ├── addorigin.js       # Origin list add/remove UI + storage init
         ├── dash_checker.js    # Decides main vs origin dashboard view from URL
         ├── dashboard.js       # Origin dashboard: sensitivities + links list + pagination
@@ -238,16 +240,25 @@ relative URLs against it. Do not reintroduce `location.origin` inside `worker.js
 - `permissions`: `storage`, `scripting`, `tabs` (`scripting` is currently **unused**).
 - `host_permissions`: `<all_urls>`.
 - `background.service_worker`: `background.js`.
-- `content_scripts`: `content.js` on `<all_urls>`, **`run_at: "document_start"`**, top
+- `content_scripts`: `assets/js/pattern_matcher.js` followed by `content.js` on `<all_urls>`, **`run_at: "document_start"`**, top
   frame only (`all_frames` is not set).
 - `web_accessible_resources`: exposes `worker.js` to `<all_urls>` so the content script
   can `fetch` it and create the worker.
 
+### `assets/js/pattern_matcher.js`
+- Core wildcard matching logic supporting:
+  - Subdomain wildcards: `https://*.google.com` (matches root domain + all subdomains).
+  - Path wildcards: `https://google.com/*`, `https://google.com/search/*`.
+  - Protocol & port wildcards: `*://*.google.com/*`, `http://localhost:*`.
+- Provides `escapeRegex`, `patternToRegex`, `matchPattern`, and `findMatchingPatterns`.
+- Loaded in service worker via `importScripts`, in content script via manifest, and in dashboard page via `<script>`.
+
 ### `background.js` (service worker)
+- Imports `assets/js/pattern_matcher.js`.
 - `chrome.runtime.onMessage` → handles `setBadge`, sets `chrome.action` badge text/color.
-- `chrome.action.onClicked` → finds the current tab origin, checks the `origins` list, and:
-  - re-focuses an already-open dashboard tab for that origin if present, else
-  - opens `dashboard.html?origin=...` (known origin) or `dashboard.html?origin_add=...`.
+- `chrome.action.onClicked` → matches tab URL against `origins` patterns via `findMatchingPatterns`:
+  - If matched, focuses existing dashboard tab for that pattern or opens `dashboard.html?origin=<pattern>`.
+  - Otherwise, opens `dashboard.html?origin_add=<origin>`.
 
 ### `content.js` (content script, isolated world) — **most complex file**
 Responsibilities and structure (top to bottom):
@@ -438,16 +449,9 @@ const relativeRegex = /["'`]((?:\.\.?\/|\/(?!\/))[^"'`\s\\]*)["'`]/g;
 
 These are real defects or sharp edges; some are intentional, some are bugs:
 
-1. **Per-link "x" button in `dashboard.js` is broken.** The click handler calls
-   `remove_origin_from_list(value)` where `value` is undefined (and that function removes
-   an *origin*, not a link). There is no remove-single-link function.
-2. **Dashboard throws when an origin has zero links.** In `loadOriginData`, `page_range`
-   stays `undefined` if `page_count === 0`, then `page_range.forEach(...)` throws.
-   The pagination `for` loop also computes `page_range` `page_count` times (only the last
-   value is used).
-3. **`dash_checker.js` URL parsing is fragile.** It uses
-   `location.href.split("origin=")[1]` / `split("origin_add=")[1]` and
-   `.split("//")[1]` instead of `URLSearchParams`.
+1. **Per-link "x" button in `dashboard.js` (FIXED).** Now calls `remove_link_from_origin(origin, link)` to delete single links safely.
+2. **Dashboard zero links crash (FIXED).** Guarded `page_count > 0` before calculating `page_range` and rendering pagination.
+3. **`dash_checker.js` URL parsing (FIXED).** Migrated to robust `URLSearchParams` handling for both `origin` and `origin_add`.
 4. **Relative-link handling (largely resolved).** Pipeline A (worker) and pipeline B
    (crawler, via `resolveAgainst` against the JS file URL) now store absolute URLs, so the
    dashboard opens them correctly. Remaining caveats: a path-absolute link (`/api/x`) found
@@ -463,8 +467,7 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 7. **`worker.onmessage` posts `window.postMessage({action:"continue"})`** to the page, but
    nothing consumes it. Dead code.
 8. **`scripting` permission is declared but unused.**
-9. **`remove_origin_from_list` does not clean up `sensitivities`/`links`**, leaving orphaned
-   entries in storage.
+9. **Origin deletion storage cleanup (FIXED).** `remove_origin_from_list` now removes `sensitivities`, `regexes`, and `links` associated with the pattern.
 10. **Blob-worker CSP:** creating a Worker from a `blob:` URL inside a content script can be
     blocked by a page's Content-Security-Policy (`worker-src`) on some sites. If links stop
     appearing on a specific site, check the console for CSP worker errors.
@@ -579,3 +582,10 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   `decodeURIComponent` to extracted URLs when checked (`c59309d`).
 - **Redirect on origin creation:** `addorigin.js` now immediately redirects to the newly added
   origin's dashboard tab (`4c681b0`).
+- **Wildcard Pattern Support:** Added `assets/js/pattern_matcher.js` supporting subdomain wildcards
+  (`https://*.google.com` matching root + all subdomains), path wildcards (`https://google.com/*`,
+  `https://google.com/search/*`), and protocol wildcards.
+- **Content & Background Pattern Matching:** `content.js` and `background.js` now match against
+  active patterns dynamically; multiple matching patterns are all updated when persisting links.
+- **Dashboard Stability Fixes:** Fixed zero-links pagination crash, single-link removal handler,
+  storage cleanup on origin removal, and URL parameter parsing with `URLSearchParams`.

@@ -1,12 +1,21 @@
-let hostname_addr = decodeURIComponent(location.href.split("origin=")[1]).split("//")[1]
-if(hostname_addr == undefined){
-    document.getElementsByClassName("origin_dashboard")[0].remove()
-    document.getElementsByClassName("main_dashboard")[0].style.display = "block"
-    if(location.href.split("origin_add=")[1]){
-        document.getElementById("originInput").value = decodeURIComponent(location.href.split("origin_add=")[1])
+const params = new URLSearchParams(window.location.search);
+const originParam = params.get("origin");
+const originAddParam = params.get("origin_add");
+
+if (!originParam) {
+    const originDash = document.getElementsByClassName("origin_dashboard")[0];
+    if (originDash) originDash.remove();
+    const mainDash = document.getElementsByClassName("main_dashboard")[0];
+    if (mainDash) mainDash.style.display = "block";
+    if (originAddParam) {
+        const originInput = document.getElementById("originInput");
+        if (originInput) originInput.value = originAddParam;
     }
-    document.getElementById("originInput").focus()
-}else {
-    document.getElementsByClassName("origin_dashboard")[0].style.display = "block"
-    document.getElementsByClassName("main_dashboard")[0].remove()
+    const originInput = document.getElementById("originInput");
+    if (originInput) originInput.focus();
+} else {
+    const originDash = document.getElementsByClassName("origin_dashboard")[0];
+    if (originDash) originDash.style.display = "block";
+    const mainDash = document.getElementsByClassName("main_dashboard")[0];
+    if (mainDash) mainDash.remove();
 }

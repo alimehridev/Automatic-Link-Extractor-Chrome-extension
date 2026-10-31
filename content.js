@@ -126,7 +126,11 @@ function readWholeDocument(out) {
 
 chrome.storage.local.get("origins", (result) => {
   const arr = result["origins"] || [];
-  if (!arr.includes(origin)) {
+  const matchingPatterns = typeof findMatchingPatterns === "function"
+    ? findMatchingPatterns(arr, location.href)
+    : (arr.includes(origin) ? [origin] : []);
+
+  if (matchingPatterns.length === 0) {
     drainEarlyNodes();
     chrome.runtime.sendMessage({ type: "setBadge", text: "off" });
     return;
@@ -142,11 +146,17 @@ chrome.storage.local.get("origins", (result) => {
       characterDataOldValue: false
     };
 
-    const s = (result.sensitivities && result.sensitivities[origin]) || {};
-    const config = {
-      ...defaults,
-      ...Object.fromEntries(Object.entries(s).map(([k, v]) => [k, Boolean(v)]))
-    };
+    const allSensitivities = result.sensitivities || {};
+    let config = { ...defaults };
+    for (const pattern of matchingPatterns) {
+      const s = allSensitivities[pattern] || {};
+      for (const key of Object.keys(defaults)) {
+        if (Boolean(s[key])) {
+          config[key] = true;
+        }
+      }
+    }
+
     if (Object.values(config).every(val => val === false)) {
       drainEarlyNodes();
       return;
@@ -174,14 +184,28 @@ chrome.storage.local.get("origins", (result) => {
         persistChain = persistChain.then(() => new Promise(resolve => {
           chrome.storage.local.get("links", (result) => {
             const linksByOrigin = result["links"] || {};
-            const stored = linksByOrigin[origin] || [];
-            const merged = [...new Set(stored.concat(links, [location.href]))];
-            if (merged.length === stored.length) {
+            let anyChanged = false;
+            let primaryCount = 0;
+
+            for (const pattern of matchingPatterns) {
+              const stored = linksByOrigin[pattern] || [];
+              const merged = [...new Set(stored.concat(links, [location.href]))];
+              if (merged.length !== stored.length) {
+                linksByOrigin[pattern] = merged;
+                anyChanged = true;
+              }
+              if (pattern === matchingPatterns[0]) {
+                primaryCount = merged.length;
+              }
+            }
+
+            chrome.runtime.sendMessage({ type: "setBadge", text: primaryCount.toString() });
+
+            if (!anyChanged) {
               resolve();
               return;
             }
-            linksByOrigin[origin] = merged;
-            chrome.runtime.sendMessage({ type: "setBadge", text: merged.length.toString() });
+
             chrome.storage.local.set({ links: linksByOrigin }, () => {
               window.postMessage({
                 action: "continue",
