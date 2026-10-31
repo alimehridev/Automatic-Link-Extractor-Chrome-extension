@@ -349,10 +349,13 @@ Known issues).
   - Loads sensitivities into the checkboxes; sets `#all` if all are checked.
   - Loads links for the origin and renders 5 per page (`.link` rows) with pagination
     `.page-button`s and ellipsis handling.
+  - Reactive live search input (`#searchLinksInput`): filters displayed links in real-time on keystroke
+    and recalculates pagination over filtered results.
+  - In-place dynamic pagination navigation (updates DOM and synchronizes URL params `page` and `q` without
+    reloading the page).
 - `#all` checkbox toggles all sensitivity checkboxes.
 - `.backBtn` navigates to the dashboard root.
-- Uses an implicit global `len` (`len = arr.length`) and calls the non-existent/undefined
-  `value` when rendering the per-link remove button (see Known issues).
+- Per-link remove button (`remove_link_from_origin`).
 
 ### `assets/js/sensitivities.js`
 - `#save_sensitivities` writes the six MutationObserver flags (as `0`/`1`) into
@@ -362,7 +365,8 @@ Known issues).
 ### `assets/js/helpers.js`
 - Bearer of shared dashboard helpers: `getQueryParam`, `copyToClipboard`.
 - `#removeAllBtn` clears `links[origin]` (then reloads).
-- `#copy_all` copies `links[origin]` joined by newlines to the clipboard.
+- `#copy_all` copies all links (or only search-filtered links if a query is active in `#searchLinksInput`)
+  joined by newlines to the clipboard.
 
 ### `assets/js/modal.js` (JS crawler)
 - `#get_js_links` opens the modal and builds `jsLinksCache`, the JS files to crawl:
@@ -613,3 +617,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   applying live regex matching to displayed origins/subdomains without persisting to storage.
 - **Subdomains Modal UI Refinement:** Cleaned up the modal footer, removing redundant buttons and standardizing on the top copy button and live reactive filtering.
 - **Manual Links Importer:** Added a `+` button next to `🔍 Extracted Links` in `dashboard.html` and modal `#addLinksModal` handled by `assets/js/custom_links.js`, allowing users to paste and append custom links into the target's link storage with automatic deduplication.
+- **Search with Pagination & Filtered Copy:** Added a live search input (`#searchLinksInput`) below the extracted links header with real-time substring filtering, dynamic in-place pagination, seamless URL synchronization (`page` and `q`), and updated `#copy_all` to strictly copy search-filtered results when an active search query is present.
