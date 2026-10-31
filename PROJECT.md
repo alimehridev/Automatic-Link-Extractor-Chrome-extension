@@ -141,7 +141,7 @@ merge into chrome.storage "links"[origin] → location.reload()
 
 ## 5. Chrome storage schema (`chrome.storage.local`)
 
-All three keys are optional until first written; always read them defensively.
+All keys are optional until first written; always read them defensively.
 
 ### `origins` — `string[]`
 List of enabled origins, e.g. `["https://example.com", "http://localhost:3000"]`.
@@ -149,7 +149,7 @@ Initialized/extended in `assets/js/addorigin.js`.
 
 ### `sensitivities` — `{ [origin: string]: MutationObserverOptionsAs01 }`
 Per-origin MutationObserver configuration. Values are stored as `0`/`1` (see
-`sensitivities.js`) but `content.js` coerces them with `Boolean(...)`.
+`sensitivities.js`) but `content.js` coerces them with `Boolean(...)`. When an origin is added in `addorigin.js`, all 6 options now default to `1`.
 
 ```jsonc
 {
@@ -157,15 +157,26 @@ Per-origin MutationObserver configuration. Values are stored as `0`/`1` (see
     "childList": 1,
     "subtree": 1,
     "attributes": 1,
-    "attributeOldValue": 0,
-    "characterData": 0,
-    "characterDataOldValue": 0
+    "attributeOldValue": 1,
+    "characterData": 1,
+    "characterDataOldValue": 1
   }
 }
 ```
 
 If **all** options for an origin are falsy, `content.js` treats the origin as inactive
 for observation (it returns early and does not create a worker).
+
+### `regexes` — `{ [origin: string]: { includes: string[], excludes: string[] } }`
+Per-origin include and exclude regexes used by the JS crawler modal. Saved automatically to storage as the user enters or removes regexes.
+```jsonc
+{
+  "https://example.com": {
+    "includes": ["YOUR_REGEX"],
+    "excludes": ["YOUR_REGEX"]
+  }
+}
+```
 
 ### `links` — `{ [origin: string]: string[] }`
 Extracted links, deduped per origin. Note the page's own URL (`location.href`) is always
@@ -311,9 +322,10 @@ Known issues).
 
 ### `assets/js/addorigin.js`
 - `remove_origin_from_list(payload)` — removes an origin from `origins` (and reloads).
-  Only touches `origins`, **not** `sensitivities` or `links`.
-- Add button: builds a row, writes to `origins`, and initializes empty `sensitivities`
-  and `links` entries for the new origin.
+  Only touches `origins`, **not** `sensitivities`, `regexes`, or `links`.
+- Add button: builds a row, writes to `origins`, initializes `sensitivities` (defaults all flags to 1),
+  `regexes` (`{includes: [], excludes: []}`), and `links` (`[]`) for the new origin, and immediately
+  redirects the window to `?origin=<value>` (commit `4c681b0`).
 - On load: renders the origin list (reversed) into `#data`.
 - Note: uses `dataDiv` which is declared *after* the add handler with `const`
   (`const dataDiv = document.getElementById("data")`) — works because the handler runs
@@ -559,3 +571,11 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   `stripTrailingPunctuation` and `isValidLink` validation.
 - The crawler now resolves every extracted link to an absolute URL against the JS file URL
   (`response.url || link`) via `resolveAgainst`, so relative links are stored usable.
+- **`sensitivities` default to 1:** New origins added via `addorigin.js` now default all 6
+  sensitivity flags to `1` (commit `93f321e`).
+- **Persistent regexes in storage:** The include/exclude patterns in the JS crawler modal are now
+  persisted to `chrome.storage.local.regexes[origin]` on every keyup/removal (`f3dd905`).
+- **URL decode option in crawler:** Added `#decode-urls` checkbox in the modal which applies
+  `decodeURIComponent` to extracted URLs when checked (`c59309d`).
+- **Redirect on origin creation:** `addorigin.js` now immediately redirects to the newly added
+  origin's dashboard tab (`4c681b0`).
