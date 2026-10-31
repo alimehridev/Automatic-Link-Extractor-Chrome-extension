@@ -197,7 +197,7 @@ flowchart TD
   - `extractOriginsOrSubdomains(links, rootDomain, { onlyTld, includeProtocol, includes, excludes })`: استخراج گزینشی بر اساس چک‌باکس‌ها و فیلترهای Regex درون‌حافظه‌ای.
   - پیاده‌سازی اینپوت‌های پیل‌مانند Regex مشابه `modal.js` با دکمه `+` و دکمه `-` و اعمال بلادرنگ در زمان `keyup`.
   - دکمه **Re-fetch** (`#refetchSubdomainsBtn`): بازخوانی بلادرنگ لینک‌های تازه بدون بستن مودال.
-  - دکمه‌های کپی (`#copySubdomainsBtn` و `#copySubdomainsMainBtn`).
+  - دکمه کپی بالای کادر متنی (`#copySubdomainsBtn`).
 
 ### `assets/js/pattern_matcher.js`
 - ماژول متمرکز و مستقل برای تطابق الگوها و وایلدکاردها.
@@ -232,7 +232,7 @@ flowchart TD
 
 ### `dashboard.html`
 - دکمه جدید **Extract subdomains** (`#extract_subdomains`) در زیر دکمه خزش JS.
-- پنجره مودال اختصاصی `#subdomainModal` شامل تنظیمات فیلتر (چک‌باکس‌های `only-tld-subdomains` و `include-protocol`)، اینپوت‌های ریجکس Include/Exclude، دکمه `Re-fetch`، نوار اطلاعات تعداد و دکمه‌های کپی کلیپ‌بورد.
+- پنجره مودال اختصاصی `#subdomainModal` شامل تنظیمات فیلتر (چک‌باکس‌های `only-tld-subdomains` و `include-protocol`)، اینپوت‌های ریجکس Include/Exclude، نوار اطلاعات تعداد آیتم‌ها و دکمه‌ کپی کلیپ‌بورد.
 - لود ماژول‌های `pattern_matcher.js` و `subdomains.js`.
 
 ### `assets/styles/style.css` و `assets/styles/modal.css`
@@ -242,10 +242,13 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **اضافه شدن سیستم Regex فیلتر درون‌حافظه‌ای به مودال Origins & Subdomains (تغییر جاری):**
+1. **بهینه‌سازی و ساده‌سازی دکمه‌های مودال Subdomains (تغییر جاری):**
+   - حذف دکمه تکراری پایین مودال و اکتفا به دکمه کپی بالای textarea (`#copySubdomainsBtn`).
+   - مرتب‌سازی فرورفتگی‌ها و پاک‌سازی رفرنس‌های بلااستفاده در `subdomains.js`.
+2. **اضافه شدن سیستم Regex فیلتر درون‌حافظه‌ای به مودال Origins & Subdomains (`269f4a2`):**
    - پیاده‌سازی اینپوت‌های اضافه کردن رگکس با استایل و کدهای مشابه `modal.js` برای بخش‌های Include و Exclude.
    - اعمال مستقیم و بلادرنگ روی نتایج بدون نیاز به ذخیره‌سازی در دیتابیس استوریج.
-2. **ارتقای پنجره مودال استخراج Origins و Subdomains (`a52789d`):**
+3. **ارتقای پنجره مودال استخراج Origins و Subdomains (`a52789d`):**
    - به صورت پیش‌فرض تمام Originها/دامنه‌های پیدا شده در لینک‌ها نمایش داده می‌شوند.
    - اضافه شدن چک‌باکس گزینشی `only-tld-subdomains` جهت محدود کردن خروجی به ساب‌دامنه‌های eTLD+1 دامنه ریشه.
    - اضافه شدن چک‌باکس `include-protocol` جهت سوئیچ بین نام دامنه و Origin کامل.

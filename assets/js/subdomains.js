@@ -84,7 +84,7 @@ function extractOriginsOrSubdomains(links, rootDomain, options = {}) {
         const port = match[3] ? `:${match[3]}` : '';
         try {
           urlObj = new URL(`${protocol}//${hostname}${port}`);
-        } catch (err) {}
+        } catch (err) { }
       }
     }
     if (!urlObj || !urlObj.hostname) continue;
@@ -133,197 +133,174 @@ function extractOriginsOrSubdomains(links, rootDomain, options = {}) {
 // UI Setup and Event Handlers
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
-  const extractBtn = document.getElementById("extract_subdomains");
-  const modal = document.getElementById("subdomainModal");
-  const closeBtn = document.getElementById("closeSubdomainModalBtn");
-  const outputTextarea = document.getElementById("subdomainOutput");
-  const rootDomainLabel = document.getElementById("subdomainRootDomain");
-  const rootDomainOptionLabel = document.getElementById("subdomainRootDomainLabel");
-  const countLabel = document.getElementById("subdomainCount");
-  const copyBtn = document.getElementById("copySubdomainsBtn");
-  const copyMainBtn = document.getElementById("copySubdomainsMainBtn");
-  const refetchBtn = document.getElementById("refetchSubdomainsBtn");
-  const onlyTldCheckbox = document.getElementById("only-tld-subdomains");
-  const includeProtocolCheckbox = document.getElementById("include-protocol");
+    const extractBtn = document.getElementById("extract_subdomains");
+    const modal = document.getElementById("subdomainModal");
+    const closeBtn = document.getElementById("closeSubdomainModalBtn");
+    const outputTextarea = document.getElementById("subdomainOutput");
+    const rootDomainLabel = document.getElementById("subdomainRootDomain");
+    const rootDomainOptionLabel = document.getElementById("subdomainRootDomainLabel");
+    const countLabel = document.getElementById("subdomainCount");
+    const refetchBtn = document.getElementById("refetchSubdomainsBtn");
+    const onlyTldCheckbox = document.getElementById("only-tld-subdomains");
+    const includeProtocolCheckbox = document.getElementById("include-protocol");
 
-  const includeAddBtn = document.querySelector(".add-subdomain-regex-include");
-  const excludeAddBtn = document.querySelector(".add-subdomain-regex-exclude");
-  const includeContainer = document.querySelector(".regex-subdomain-include .custom-regexes");
-  const excludeContainer = document.querySelector(".regex-subdomain-exclude .custom-regexes");
+    const includeAddBtn = document.querySelector(".add-subdomain-regex-include");
+    const excludeAddBtn = document.querySelector(".add-subdomain-regex-exclude");
+    const includeContainer = document.querySelector(".regex-subdomain-include .custom-regexes");
+    const excludeContainer = document.querySelector(".regex-subdomain-exclude .custom-regexes");
 
-  if (!extractBtn || !modal) return;
+    if (!extractBtn || !modal) return;
 
-  let cachedLinks = [];
-  let currentRootDomain = "";
+    let cachedLinks = [];
+    let currentRootDomain = "";
 
-  function getRegexList(container) {
-    if (!container) return [];
-    return [...container.querySelectorAll(".custom-regex")]
-      .map(el => {
-        const valEl = el.querySelector(".regex-value");
-        return valEl ? valEl.innerText.trim() : "";
-      })
-      .filter(val => val && val !== "YOUR_REGEX");
-  }
+    function getRegexList(container) {
+      if (!container) return [];
+      return [...container.querySelectorAll(".custom-regex")]
+        .map(el => {
+          const valEl = el.querySelector(".regex-value");
+          return valEl ? valEl.innerText.trim() : "";
+        })
+        .filter(val => val && val !== "YOUR_REGEX");
+    }
 
-  function addRegexPill(container) {
-    if (!container) return;
-    try {
-      const existing = container.querySelectorAll(".custom-regex");
-      if (existing.length > 0) {
-        const lastVal = existing[existing.length - 1].querySelector(".regex-value").innerText;
-        if (lastVal === "YOUR_REGEX") return;
-      }
-    } catch (e) {}
+    function addRegexPill(container) {
+      if (!container) return;
+      try {
+        const existing = container.querySelectorAll(".custom-regex");
+        if (existing.length > 0) {
+          const lastVal = existing[existing.length - 1].querySelector(".regex-value").innerText;
+          if (lastVal === "YOUR_REGEX") return;
+        }
+      } catch (e) { }
 
-    const customRegex = document.createElement("div");
-    customRegex.classList.add("custom-regex");
-    customRegex.appendChild(document.createTextNode(" / "));
+      const customRegex = document.createElement("div");
+      customRegex.classList.add("custom-regex");
+      customRegex.appendChild(document.createTextNode(" / "));
 
-    const regexValueSpan = document.createElement("span");
-    regexValueSpan.setAttribute("contenteditable", "true");
-    regexValueSpan.classList.add("regex-value");
-    regexValueSpan.innerHTML = "YOUR_REGEX";
-    customRegex.appendChild(regexValueSpan);
+      const regexValueSpan = document.createElement("span");
+      regexValueSpan.setAttribute("contenteditable", "true");
+      regexValueSpan.classList.add("regex-value");
+      regexValueSpan.innerHTML = "YOUR_REGEX";
+      customRegex.appendChild(regexValueSpan);
 
-    regexValueSpan.addEventListener("keyup", () => {
+      regexValueSpan.addEventListener("keyup", () => {
+        renderOutput();
+      });
+
+      customRegex.appendChild(document.createTextNode(" /g "));
+
+      const removeRegexSpan = document.createElement("span");
+      removeRegexSpan.innerHTML = "-";
+      removeRegexSpan.classList.add("regex-remove-btn");
+      customRegex.appendChild(removeRegexSpan);
+
+      removeRegexSpan.addEventListener("click", () => {
+        customRegex.remove();
+        renderOutput();
+      });
+
+      container.appendChild(customRegex);
       renderOutput();
-    });
+    }
 
-    customRegex.appendChild(document.createTextNode(" /g "));
+    if (includeAddBtn && includeContainer) {
+      includeAddBtn.addEventListener("click", () => {
+        addRegexPill(includeContainer);
+      });
+    }
 
-    const removeRegexSpan = document.createElement("span");
-    removeRegexSpan.innerHTML = "-";
-    removeRegexSpan.classList.add("regex-remove-btn");
-    customRegex.appendChild(removeRegexSpan);
+    if (excludeAddBtn && excludeContainer) {
+      excludeAddBtn.addEventListener("click", () => {
+        addRegexPill(excludeContainer);
+      });
+    }
 
-    removeRegexSpan.addEventListener("click", () => {
-      customRegex.remove();
-      renderOutput();
-    });
+    function renderOutput() {
+      const onlyTld = onlyTldCheckbox ? onlyTldCheckbox.checked : false;
+      const includeProtocol = includeProtocolCheckbox ? includeProtocolCheckbox.checked : false;
+      const includes = getRegexList(includeContainer);
+      const excludes = getRegexList(excludeContainer);
 
-    container.appendChild(customRegex);
-    renderOutput();
-  }
+      const items = extractOriginsOrSubdomains(cachedLinks, currentRootDomain, {
+        onlyTld,
+        includeProtocol,
+        includes,
+        excludes
+      });
 
-  if (includeAddBtn && includeContainer) {
-    includeAddBtn.addEventListener("click", () => {
-      addRegexPill(includeContainer);
-    });
-  }
+      outputTextarea.value = items.join("\n");
+      const itemType = onlyTld ? "subdomains" : "origins";
+      countLabel.innerText = `${items.length} ${itemType}`;
+    }
 
-  if (excludeAddBtn && excludeContainer) {
-    excludeAddBtn.addEventListener("click", () => {
-      addRegexPill(excludeContainer);
-    });
-  }
+    function fetchAndRender(callback) {
+      const originParam = getQueryParam("origin");
+      if (!originParam) return;
 
-  function renderOutput() {
-    const onlyTld = onlyTldCheckbox ? onlyTldCheckbox.checked : false;
-    const includeProtocol = includeProtocolCheckbox ? includeProtocolCheckbox.checked : false;
-    const includes = getRegexList(includeContainer);
-    const excludes = getRegexList(excludeContainer);
+      const hostname = extractHostnameFromPattern(originParam);
+      currentRootDomain = getRootDomain(hostname);
 
-    const items = extractOriginsOrSubdomains(cachedLinks, currentRootDomain, {
-      onlyTld,
-      includeProtocol,
-      includes,
-      excludes
-    });
+      if (rootDomainLabel) rootDomainLabel.innerText = currentRootDomain || hostname || originParam;
+      if (rootDomainOptionLabel) rootDomainOptionLabel.innerText = currentRootDomain || hostname || "domain";
 
-    outputTextarea.value = items.join("\n");
-    const itemType = onlyTld ? "subdomains" : "origins";
-    countLabel.innerText = `${items.length} ${itemType}`;
-  }
+      chrome.storage.local.get("links", (result) => {
+        cachedLinks = (result["links"] && result["links"][originParam]) || [];
+        renderOutput();
+        if (typeof callback === "function") callback();
+      });
+    }
 
-  function fetchAndRender(callback) {
-    const originParam = getQueryParam("origin");
-    if (!originParam) return;
-
-    const hostname = extractHostnameFromPattern(originParam);
-    currentRootDomain = getRootDomain(hostname);
-
-    if (rootDomainLabel) rootDomainLabel.innerText = currentRootDomain || hostname || originParam;
-    if (rootDomainOptionLabel) rootDomainOptionLabel.innerText = currentRootDomain || hostname || "domain";
-
-    chrome.storage.local.get("links", (result) => {
-      cachedLinks = (result["links"] && result["links"][originParam]) || [];
-      renderOutput();
-      if (typeof callback === "function") callback();
-    });
-  }
-
-  extractBtn.addEventListener("click", () => {
-    fetchAndRender(() => {
-      modal.style.display = "block";
-    });
-  });
-
-  if (refetchBtn) {
-    refetchBtn.addEventListener("click", () => {
-      const originalText = refetchBtn.innerText;
-      refetchBtn.innerText = "⟳ Fetching...";
-      refetchBtn.disabled = true;
-
+    extractBtn.addEventListener("click", () => {
       fetchAndRender(() => {
-        refetchBtn.innerText = "✓ Refetched!";
-        setTimeout(() => {
-          refetchBtn.innerText = originalText;
-          refetchBtn.disabled = false;
-        }, 600);
+        modal.style.display = "block";
       });
     });
-  }
 
-  if (onlyTldCheckbox) {
-    onlyTldCheckbox.addEventListener("change", () => {
-      renderOutput();
-    });
-  }
-
-  if (includeProtocolCheckbox) {
-    includeProtocolCheckbox.addEventListener("change", () => {
-      renderOutput();
-    });
-  }
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-  }
-
-  window.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.style.display = "none";
+    if (onlyTldCheckbox) {
+      onlyTldCheckbox.addEventListener("change", () => {
+        renderOutput();
+      });
     }
+
+    if (includeProtocolCheckbox) {
+      includeProtocolCheckbox.addEventListener("change", () => {
+        renderOutput();
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        modal.style.display = "none";
+      });
+    }
+
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+
+    function performCopy(buttonElement, originalText, successText) {
+      const text = outputTextarea.value;
+      if (typeof copyToClipboard === "function") {
+        copyToClipboard(text);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      buttonElement.innerText = successText;
+      setTimeout(() => {
+        buttonElement.innerText = originalText;
+      }, 1000);
+    }
+
+    if (copyBtn) {
+      copyBtn.addEventListener("click", () => {
+        performCopy(copyBtn, "copy", "copied");
+      });
+    }
+
   });
-
-  function performCopy(buttonElement, originalText, successText) {
-    const text = outputTextarea.value;
-    if (typeof copyToClipboard === "function") {
-      copyToClipboard(text);
-    } else {
-      navigator.clipboard.writeText(text);
-    }
-    buttonElement.innerText = successText;
-    setTimeout(() => {
-      buttonElement.innerText = originalText;
-    }, 1000);
-  }
-
-  if (copyBtn) {
-    copyBtn.addEventListener("click", () => {
-      performCopy(copyBtn, "copy", "copied");
-    });
-  }
-
-  if (copyMainBtn) {
-    copyMainBtn.addEventListener("click", () => {
-      performCopy(copyMainBtn, "Copy to clipboard", "Copied!");
-    });
-  }
-});
 }
 
 if (typeof module !== "undefined" && module.exports) {

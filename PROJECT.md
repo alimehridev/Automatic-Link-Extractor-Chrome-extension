@@ -605,3 +605,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **In-Memory Regex Filtering in Subdomains Modal:** Added Include and Exclude regex filters to
   `#subdomainModal` replicating the JS crawler UI (`.custom-regex` pills with `contenteditable` and remove button),
   applying live regex matching to displayed origins/subdomains without persisting to storage.
+- **Subdomains Modal UI Refinement:** Cleaned up the modal footer, removing redundant buttons and standardizing on the top copy button and live reactive filtering.
