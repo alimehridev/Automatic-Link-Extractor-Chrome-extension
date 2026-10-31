@@ -64,6 +64,7 @@ Automatic Link Extractor - Chrome extension/
         ├── sensitivities.js   # Save MutationObserver sensitivity toggles
         ├── modal.js           # JS-file crawler modal (fetch JS, regex-extract links)
         ├── subdomains.js      # eTLD+1 root domain & subdomain extractor modal
+        ├── custom_links.js    # Manual link importer modal for adding links to target
         └── helpers.js         # Shared dashboard helpers (copy, remove-all)
 ```
 
@@ -393,6 +394,12 @@ Known issues).
 - Identifies the target's eTLD+1 root domain (with multi-part suffix support for `.co.uk`, `.ac.ir`, `.com.tr`, etc.).
 - Renders results inside `#subdomainModal` with target root domain label, item count, and clipboard copy button.
 
+### `assets/js/custom_links.js` (Manual Links Importer)
+- Activated by the `+` button (`#openAddLinksModalBtn`) next to `🔍 Extracted Links` in the dashboard.
+- Opens `#addLinksModal` with target origin indicator, editable links textarea, and live link count.
+- Trims, filters, and deduplicates custom links with `Set` before merging into `chrome.storage.local.links[origin]`.
+- Automatically refreshes the dashboard view upon successful addition.
+
 ### `assets/styles/*.css`
 - `style.css` — dashboard layout, `.page`/`.link` rows, `.keyword`, toggle switches,
   pagination buttons, `.removeLogBtn`, etc.
@@ -605,3 +612,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   `#subdomainModal` replicating the JS crawler UI (`.custom-regex` pills with `contenteditable` and remove button),
   applying live regex matching to displayed origins/subdomains without persisting to storage.
 - **Subdomains Modal UI Refinement:** Cleaned up the modal footer, removing redundant buttons and standardizing on the top copy button and live reactive filtering.
+- **Manual Links Importer:** Added a `+` button next to `🔍 Extracted Links` in `dashboard.html` and modal `#addLinksModal` handled by `assets/js/custom_links.js`, allowing users to paste and append custom links into the target's link storage with automatic deduplication.

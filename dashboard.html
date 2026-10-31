@@ -189,8 +189,9 @@
 
       <ul id="keywordList"></ul>
 
-      <div class="" style="margin-bottom: 10px">
-        <h2 style="margin-top: initial; text-align: left;">🔍 Extracted Links</h2>
+      <div class="" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+        <h2 style="margin-top: initial; text-align: left; margin-bottom: 0;">🔍 Extracted Links</h2>
+        <button id="openAddLinksModalBtn" title="Add links to target">+</button>
       </div>
       <div id="origin"></div>
       <div id="links"></div>
@@ -305,11 +306,31 @@
         </div>
       </div>
 
+      <div id="addLinksModal" class="modal">
+        <div class="modal-content">
+          <span id="closeAddLinksModalBtn" class="close-btn">&times;</span>
+          <h3 style="margin-bottom: 8px; color: #333;">➕ Add Links to Target</h3>
+          <div style="margin-bottom: 12px; font-size: 13px; color: #555;">
+            Target: <strong id="addLinksTargetLabel" style="color: #0066ff;">-</strong>
+          </div>
+          <div>
+            <textarea id="customLinksInput" placeholder="Enter links (one per line)...&#10;https://example.com/page1&#10;https://example.com/page2" style="height: 180px; font-family: monospace;"></textarea>
+          </div>
+          <div class="info-bar" style="margin-top: 5px;">
+            <span id="customLinksCount" class="links-number">0 links</span>
+          </div>
+          <div class="modal-buttons" style="margin-top: 10px; display: flex; gap: 8px;">
+            <button id="saveCustomLinksBtn" style="background-color: #4CAF50; color: white;">Add to links</button>
+          </div>
+        </div>
+      </div>
+
       <script src="assets/js/pattern_matcher.js"></script>
       <script src="assets/js/dashboard.js"></script>
       <script src="assets/js/sensitivities.js"></script>
       <script src="assets/js/modal.js"></script>
       <script src="assets/js/subdomains.js"></script>
+      <script src="assets/js/custom_links.js"></script>
       <script src="assets/js/helpers.js"></script>
     </div>
     <script src="assets/js/dash_checker.js"></script>

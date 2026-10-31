@@ -92,6 +92,21 @@ input[type="text"] {
 #extract_subdomains {
   background-color: #7b2cbf;
 }
+#openAddLinksModalBtn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 2px 9px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 20px;
+  transition: background-color 0.2s;
+}
+#openAddLinksModalBtn:hover {
+  background-color: #45a049;
+}
 #get_js_links {
   background-color: #af3333;
 }
