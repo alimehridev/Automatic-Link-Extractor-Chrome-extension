@@ -140,7 +140,7 @@ if (typeof document !== "undefined") {
     const rootDomainLabel = document.getElementById("subdomainRootDomain");
     const rootDomainOptionLabel = document.getElementById("subdomainRootDomainLabel");
     const countLabel = document.getElementById("subdomainCount");
-    const refetchBtn = document.getElementById("refetchSubdomainsBtn");
+    const copyBtn = document.getElementById("copySubdomainsBtn");
     const onlyTldCheckbox = document.getElementById("only-tld-subdomains");
     const includeProtocolCheckbox = document.getElementById("include-protocol");
 
