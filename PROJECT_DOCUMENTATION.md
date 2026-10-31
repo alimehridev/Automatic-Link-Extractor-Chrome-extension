@@ -6,13 +6,16 @@
 
 ## ۱. معرفی کلی و هدف پروژه
 
-افزونه **Automatic Link Extractor** یک افزونه برای مرورگر گوگل کروم بر پایه **Manifest V3** است که به منظور کشف و استخراج خودکار و بلادرنگ پیوندها (Links / URLs) طراحی شده است. این افزونه دو وظیفه و پایپ‌لاین اصلی دارد:
+افزونه **Automatic Link Extractor** یک افزونه برای مرورگر گوگل کروم بر پایه **Manifest V3** است که به منظور کشف و استخراج خودکار و بلادرنگ پیوندها (Links / URLs) طراحی شده است. این افزونه سه قابلیت و پایپ‌لاین کلیدی دارد:
 
 1. **استخراج زنده پیوندها از ساختار DOM با پشتیبانی از Wildcard Patterns (Live DOM Link Extraction):**
    یک Content Script روی وب‌سایت‌هایی که کاربر فعال (Enable) کرده یا با الگوهای وایلدکارد منطبق است اجرا می‌شود و با استفاده از `MutationObserver` هرگونه تغییر در ساختار صفحه را زیر نظر گرفته و تمامی پیوندها را از ویژگی‌های مختلف HTML (مانند `href`, `src`, `action`, `data-*` و ...) استخراج می‌کند. پیوندها به تفکیک الگو/دامنه ذخیره شده و تعداد آن‌ها در نشانگر (Badge) آیکون افزونه نمایش داده می‌شود.
 
 2. **خزنده و تحلیل‌گر فایل‌های جاوااسکریپت (JavaScript File Crawler):**
    از طریق داشبورد افزونه، کاربر می‌تواند تمام فایل‌های اسکریپت (`.js`) کشف‌شده از دامنه را انتخاب کرده و محتوای آن‌ها را خزش (Crawl) کند تا با استفاده از الگوهای Regex بهینه‌سازی‌شده، تمامی مسیرها، اندپوینت‌های API و پیوندهای مطلق و نسبی داخل فایل‌های جاوااسکریپت استخراج شوند.
+
+3. **استخراج جامع دامنه‌ها و ساب‌دامنه‌ها (Origins & Subdomains Extractor):**
+   با یک کلیک روی دکمه **Extract subdomains**، تمامی لینک‌های ذخیره‌شده بررسی می‌شوند. به صورت پیش‌فرض تمام Originها/دامنه‌های پیدا شده در لینک‌ها (شامل دامنه‌های متفرقه، CDNها، APIها و ساب‌دامنه‌ها) نمایش داده می‌شوند. کاربر می‌تواند با فعال کردن چک‌باکس **Only show TLD+1 subdomains**، خروجی را منحصراً به ساب‌دامنه‌های متعلق به دامنه اصلی ریشه (eTLD+1) محدود کند و در هر لحظه با دکمه **Re-fetch** اطلاعات را بازخوانی کند.
 
 > **ویژگی فنی مهم:** این پروژه کاملاً با **Vanilla JavaScript** (جاوااسکریپت خالص استاندارد مدرن مرورگر) پیاده‌سازی شده و هیچ‌گونه وابستگی، پکیج NPM، بیلد تول (Webpack/Vite/Rollup) یا فریمورک فرانت‌اند ندارد. به صورت مستقیم در حالت Developer Mode کروم بارگذاری (Load unpacked) می‌شود.
 
@@ -49,7 +52,8 @@ flowchart TD
 
     subgraph Extension Context
         SW["background.js (Service Worker)"]
-        DB["dashboard.html + JS (Extension Page)"]
+        DB["dashboard.html (Extension Page)"]
+        SUB["subdomains.js (Origins & Subdomains Extractor)"]
         Storage[("chrome.storage.local")]
     end
 
@@ -62,6 +66,7 @@ flowchart TD
     CS -- "persist links" --> Storage
     SW -- "onClicked (تطابق الگو)" --> DB
     DB -- "خوانش و نگارش تنظیمات و لینک‌ها" --> Storage
+    SUB -- "واکشی لینک‌ها و فیلتر گزینشی" --> Storage
 ```
 
 | محیط / کامپوننت | فایل مربوطه | دسترسی به DOM؟ | دسترسی به API کروم؟ | وظیفه اصلی |
@@ -69,7 +74,7 @@ flowchart TD
 | **Service Worker** | `background.js` | ❌ خیر | ✅ بله (`chrome.*`) | لود `pattern_matcher.js` با `importScripts`، مدیریت کلیک، تشخیص الگوی منطبق با تب فعال و باز کردن داشبورد. |
 | **Content Script** | `assets/js/pattern_matcher.js` + `content.js` | ✅ بله (Isolated) | ✅ بله (محدود به `storage`, `runtime`) | بررسی تطابق URL جاری با الگوهای وایلدکارد، نظارت بر DOM، ارسال کاندیدها به ورکر، ذخیره لینک‌ها در کلید مربوط به الگو. |
 | **Web Worker** | `worker.js` | ❌ خیر | ❌ خیر (سندباکس ایزوله) | پردازش پس‌زمینه و موازی URLها، فیلتر اسکیماهای نامعتبر و نرمال‌سازی لینک‌ها. |
-| **Extension Page** | `dashboard.html` + `assets/js/*` | ✅ بله (DOM داشبورد) | ✅ بله (دسترسی کامل) | رابط کاربری مدیریت الگوها، تنظیم حساسیت، مشاهده لینک‌ها با صفحه‌بندی امن و مودال خزنده JS. |
+| **Extension Page** | `dashboard.html` + `assets/js/*` | ✅ بله (DOM داشبورد) | ✅ بله (دسترسی کامل) | رابط کاربری مدیریت الگوها، تنظیم حساسیت، مشاهده لینک‌ها با صفحه‌بندی امن، مودال خزنده JS و مودال استخراج ساب‌دامنه‌ها/مبدأها. |
 
 ---
 
@@ -78,53 +83,51 @@ flowchart TD
 ### ۴.۱. پایپ‌لاین اول: استخراج زنده از DOM (Pipeline A)
 
 این فرآیند به شکل زنده در هر صفحه‌ای که آدرس آن با یکی از الگوهای ثبت شده منطبق باشد اجرا می‌شود:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Page as صفحه وب
-    participant CS as content.js
-    participant Storage as chrome.storage.local
-    participant WW as worker.js
-    participant BG as background.js
-
-    Page->>CS: اجرای اسکریپت در زمان document_start
-    CS->>CS: راه‌اندازی earlyObserver همگام برای ثبت نودهای اولیه پارس
-    CS->>Storage: دریافت لیست الگوهای ذخیره شده (origins)
-    CS->>CS: اجرای findMatchingPatterns(origins, location.href)
-    alt هیچ الگویی منطبق نیست
-        CS->>BG: ارسال setBadge به وضعیت "off"
-        CS->>CS: توقف ادامه اجرا
-    else حداقل یک الگو منطبق است
-        CS->>Storage: دریافت sensitivities برای الگوهای منطبق
-        CS->>WW: ساخت Worker از طریق Blob URL
-        CS->>CS: تخلیه earlyNodes و خواندن کل DOM (حتی Shadow DOM و iframes)
-        CS->>CS: بافر کردن لینک‌های خام در pending (دی‌بانس ۱۵۰ میلی‌ثانیه)
-        CS->>WW: ارسال کاندیدها به همراه document.baseURI
-        WW->>WW: نرمال‌سازی با new URL(candidate, base) و حذف موارد تکراری/بی‌ارزش
-        WW-->>CS: ارسال لینک‌های قطعی و یکتا
-        CS->>Storage: ادغام امن لینک‌ها تحت کلید الگوهای منطبق (زنجیره persistChain)
-        CS->>BG: به‌روزرسانی مقدار Badge با تعداد لینک‌های الگوی اصلی
-        CS->>Page: مانیتورینگ تغییرات DOM جدید با MutationObserver سفارشی
-    end
-```
-
-#### ویژگی‌های تحت پایش (`LINK_ATTRIBUTES`):
-`href`, `src`, `srcset`, `action`, `formaction`, `data-url`, `data-href`, `data-src`, `poster`, `cite`, `background`, `profile`, `manifest`, `longdesc`, `data`.
+1. در `document_start` نودهای زودهنگام با `earlyObserver` بافر می‌شوند.
+2. با `findMatchingPatterns(origins, location.href)` الگوهای منطبق شناسایی می‌شوند.
+3. در صورت انطباق، `worker.js` از طریق Blob URL ایجاد شده و DOM پویش می‌شود.
+4. مقادیر اتریبیوت‌های لینک‌ساز (`href`, `src`, `srcset`, `action`, `formaction`, `data-*`, `poster`, ...) بافر و با دی‌بانس ۱۵۰ میلی‌ثانیه برای ورکر ارسال می‌شوند.
+5. ورکر پیوندها را نرمال‌سازی کرده و لینک‌های یکتا و مطلق را به `content.js` پس می‌دهد.
+6. لینک‌ها در زنجیره `persistChain` درون کلید الگوهای منطبق در `chrome.storage.local` ذخیره شده و Badge تب به‌روزرسانی می‌شود.
 
 ---
 
 ### ۴.۲. پایپ‌لاین دوم: خزنده فایل‌های جاوااسکریپت (Pipeline B)
 
-این فرآیند درون صفحه داشبورد و با درخواست کاربر اجرا می‌شود:
 1. کاربر روی **Extract links from JS files** کلیک می‌کند.
-2. اسکریپت‌های استخراج‌شده برای آن الگو از استوریج واکشی می‌شوند.
-3. کاربر فایل‌ها و گزینه‌ها (مانند Decode URLs یا عبارات فیلتر Include/Exclude) را مشخص و دکمه **Crawl** را می‌زند.
-4. با ارسال درخواست‌های `fetch` به فایل‌های JS، محتوا با دو رگکس استخراج می‌شود:
-   - **لینک‌های مطلق:** `/(?:(?:https?|ftps?|wss?):)?\/\/[^\s"'`<>\\^|{}\[\]]+/gi`
-   - **لینک‌های نسبی:** `/["'`]((?:\.\.?\/|\/(?!\/))[^"'`\s\\]*)["'`]/g`
-5. تمام لینک‌های نسبی به صورت خودکار بر اساس URL خود فایل اسکریپت (`response.url`) به لینک قطعی و مطلق تبدیل می‌شوند.
-6. با کلیک روی **Add links**، لینک‌های جدید مستقیماً به بانک لینک‌های آن الگو اضافه می‌شوند.
+2. اسکریپت‌های استخراج‌شده برای آن الگو واکشی و در مودال لیست می‌شوند.
+3. با کلیک روی **Crawl**، درخواست‌های `fetch` ارسال شده و پیوندها با رگکس‌های مطلق و نسبی استخراج می‌گردند.
+4. مسیرهای نسبی نسبت به URL خود اسکریپت بازنشانی شده و با اعمال فیلترهای Regex کاربر و گزینه Decode URLs، به استوریج اضافه می‌شوند.
+
+---
+
+### ۴.۳. پایپ‌لاین سوم: استخراج مبدأها و ساب‌دامنه‌ها (Pipeline C - Origins & Subdomains)
+
+این فرآیند با کلیک روی دکمه **Extract subdomains** اجرا می‌شود:
+
+```mermaid
+flowchart TD
+    ClickSub["کلیک روی دکمه Extract subdomains"] --> GetPattern["دریافت Origin/Pattern جاری از آدرس"]
+    GetPattern --> CalcRoot["محاسبه دامنه‌ی ریشه eTLD+1 با getRootDomain"]
+    CalcRoot --> FetchLinks["خواندن تمامی لینک‌های استخراج‌شده از storage"]
+    FetchLinks --> CheckFilter{"آیا تیک Only show TLD+1 subdomains فعال است؟"}
+    CheckFilter -- "خیر (پیش‌فرض)" --> AllOrigins["استخراج تمام Originها و دامنه‌های کشف‌شده در لینک‌ها"]
+    CheckFilter -- "بله" --> TldOnly["فیلتر کردن فقط ساب‌دامنه‌های متعلق به دامنه ریشه"]
+    AllOrigins --> CheckProto{"آیا تیک Include protocol فعال است؟"}
+    TldOnly --> CheckProto
+    CheckProto -- "بله" --> FullOrigin["نمایش با پروتکل https://..."]
+    CheckProto -- "خیر" --> HostnameOnly["نمایش نام دامنه‌ها/ساب‌دامنه‌ها"]
+    FullOrigin --> DedupeSort["حذف موارد تکراری، مرتب‌سازی الفبایی"]
+    HostnameOnly --> DedupeSort
+    DedupeSort --> OpenSubModal["نمایش در مودال + امکان کپی و بازخوانی سریع (Re-fetch)"]
+```
+
+#### قابلیت‌ها و گزینه‌های مودال:
+1. **نمایش پیش‌فرض (Default):** نمایش تمام دامنه‌ها/Originهای کشف‌شده در کلیه لینک‌های صفحه بدون هیچ فیلتری (مثلاً دامنه‌های ثالث، CDNها، APIهای خارجی و ...).
+2. **چک‌باکس Only show TLD+1 subdomains:** در صورت فعال شدن، لیست بلافاصله فیلتر شده و تنها ساب‌دامنه‌هایی که به دامنه اصلی ریشه (eTLD+1) تعلق دارند نمایش داده می‌شوند (مثلاً برای `google.com` فقط ساب‌دامنه‌هایی چون `apis.google.com` و `mail.google.com` نمایش می‌یابند).
+3. **چک‌باکس Include protocol:** امکان تغییر فرمت بین نام تمیز هاست (`sub.example.com`) و مبدأ کامل وب (`https://sub.example.com`).
+4. **دکمه Re-fetch (⟳):** واکشی مجدد زنده از حافظه بدون بستن پنجره مودال برای دریافت لینک‌های جدیدی که به تازگی در پس‌زمینه توسط مانیتورینگ DOM ثبت شده‌اند.
+5. **الگوریتم eTLD+1:** با پوشش پسوندهای چندبخشی اینترنتی (`MULTI_PART_TLDS`) از قبیل `.co.uk`, `.ac.ir`, `.com.tr`, `.org.uk` و ...
 
 ---
 
@@ -184,17 +187,22 @@ sequenceDiagram
 
 ## ۶. بررسی تفکیکی فایل‌های پروژه
 
-### `assets/js/pattern_matcher.js` *(جدید)*
+### `assets/js/subdomains.js`
+- مدیریت استخراج Origins و Subdomains:
+  - مجموعه `MULTI_PART_TLDS`: پوشش پسوندهای چندبخشی.
+  - `extractHostnameFromPattern(pattern)`: استخراج نام هاست از الگو.
+  - `getRootDomain(hostname)`: محاسبه دامنه ریشه eTLD+1.
+  - `extractOriginsOrSubdomains(links, rootDomain, { onlyTld, includeProtocol })`: استخراج گزینشی بر اساس چک‌باکس‌ها.
+  - دکمه **Re-fetch** (`#refetchSubdomainsBtn`): بازخوانی بلادرنگ لینک‌های تازه بدون بستن مودال.
+  - دکمه‌های کپی (`#copySubdomainsBtn` و `#copySubdomainsMainBtn`).
+
+### `assets/js/pattern_matcher.js`
 - ماژول متمرکز و مستقل برای تطابق الگوها و وایلدکاردها.
-- توابع کلیدی:
-  - `escapeRegex(str)`: فرار کاراکترهای خاص به جز وایلدکارد.
-  - `patternToRegex(pattern)`: تبدیل الگوهای وایلدکارد (`https://*.domain.com`, `https://domain.com/*`, ...) به یک شیء `RegExp` استاندارد و دقیق.
-  - `matchPattern(pattern, url)`: تست انطباق یک آدرس با یک الگو.
-  - `findMatchingPatterns(patterns, url)`: فیلتر کردن تمام الگوهای منطبق برای یک آدرس.
+- توابع کلیدی: `escapeRegex`، `patternToRegex`، `matchPattern` و `findMatchingPatterns`.
 
 ### `manifest.json`
 - تعریف استاندارد **Manifest V3**.
-- اضافه شدن `assets/js/pattern_matcher.js` به عنوان اسکریپت پیش‌نیاز در `content_scripts` قبل از `content.js`.
+- اضافه شدن `pattern_matcher.js` به عنوان اسکریپت پیش‌نیاز در `content_scripts`.
 - دسترسی به میزبان: `<all_urls>`.
 
 ### `background.js` (Service Worker)
@@ -207,7 +215,7 @@ sequenceDiagram
 - ادغام لینک‌های جدید در بانک لینک‌های تمامی الگوهای منطبق در `persist(links)`.
 
 ### `assets/js/dash_checker.js`
-- بازنویسی کامل با `URLSearchParams`؛ برطرف کردن روش شکننده قدیمی (`.split("origin=")[1]`) و پشتیبانی کامل و بدون خطا از کاراکترهای وایلدکارد و پارامترهای مختلف.
+- استفاده از `URLSearchParams`؛ پشتیبانی کامل و بدون خطا از کاراکترهای وایلدکارد و پارامترهای مختلف.
 
 ### `assets/js/addorigin.js`
 - افزودن الگوها با انکود امن URL (`encodeURIComponent`).
@@ -220,36 +228,39 @@ sequenceDiagram
 - نمایش تعداد کل لینک‌های استخراج‌شده برای الگو در هدر داشبورد.
 
 ### `dashboard.html`
-- به‌روزرسانی placeholder ورودی افزودن مبدأ/الگو (`Enter origin or pattern (e.g. https://*.google.com, https://google.com/*)...`).
-- لود ماژول `pattern_matcher.js`.
+- دکمه جدید **Extract subdomains** (`#extract_subdomains`) در زیر دکمه خزش JS.
+- پنجره مودال اختصاصی `#subdomainModal` شامل تنظیمات فیلتر (چک‌باکس‌های `only-tld-subdomains` و `include-protocol`)، دکمه `Re-fetch`، نوار اطلاعات تعداد و دکمه‌های کپی کلیپ‌بورد.
+- لود ماژول‌های `pattern_matcher.js` و `subdomains.js`.
+
+### `assets/styles/style.css` و `assets/styles/modal.css`
+- استایل‌دهی بنفش به دکمه `#extract_subdomains` و اعمال استایل دکمه‌های کپی و کادر textarea مودال.
 
 ---
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **پشتیبانی کامل از Wildcard Patterns (کامیت جاری):**
-   - افزودن امکان ثبت الگوهایی مانند `https://*.google.com` (ساب‌دامنه‌ها و دامنه ریشه) و `https://google.com/*` (مسیرهای پیشوندی).
+1. **ارتقای پنجره مودال استخراج Origins و Subdomains (تغییر جاری):**
+   - به صورت پیش‌فرض تمام Originها/دامنه‌های پیدا شده در لینک‌ها نمایش داده می‌شوند.
+   - اضافه شدن چک‌باکس گزینشی `only-tld-subdomains` جهت محدود کردن خروجی به ساب‌دامنه‌های eTLD+1 دامنه ریشه.
+   - اضافه شدن چک‌باکس `include-protocol` جهت سوئیچ بین نام دامنه و Origin کامل.
+   - اضافه شدن دکمه **Re-fetch** (`#refetchSubdomainsBtn`) برای واکشی دوباره و زنده بدون نیاز به بستن مودال.
+2. **اضافه شدن قابلیت استخراج ساب‌دامنه‌ها (Extract Subdomains):**
+   - ایجاد دکمه `#extract_subdomains` در داشبورد.
+   - ایجاد ماژول `assets/js/subdomains.js` برای استخراج دامنه‌ی ریشه eTLD+1.
+3. **پشتیبانی کامل از Wildcard Patterns:**
+   - افزودن امکان ثبت الگوهایی مانند `https://*.google.com` و `https://google.com/*`.
    - ایجاد ماژول مستقل `assets/js/pattern_matcher.js`.
-   - همگام‌سازی `content.js` و `background.js` با موتور تشخیص الگو.
-2. **رفع باگ‌ها و ارتقای پایداری داشبورد (کامیت جاری):**
-   - برطرف کردن باگ دکمه حذف تکی لینک در `dashboard.js` با تابع `remove_link_from_origin`.
-   - رفع خطای کرش صفحه‌بندی در زمان صفر بودن تعداد لینک‌ها در `dashboard.js`.
+4. **رفع باگ‌ها و ارتقای پایداری داشبورد:**
+   - رفع باگ دکمه حذف تکی لینک در `dashboard.js`.
+   - رفع خطای کرش صفحه‌بندی در زمان صفر بودن تعداد لینک‌ها.
    - ارتقای `dash_checker.js` به استفاده از `URLSearchParams`.
-   - پاک‌سازی کامل اطلاعات یتیم در استوریج زمان حذف یک مبدأ در `addorigin.js`.
-3. **هدایت مستقیم به داشبورد پس از افزودن مبدأ (`4c681b0`):**
-   - ریدایرکت خودکار به تب داشبورد مبدأ اضافه شده.
-4. **قابلیت Decode کردن لینک‌های استخراج‌شده در مودال (`c59309d`):**
-   - افزودن چک‌باکس `decode-urls`.
-5. **ذخیره‌سازی پایدار Regexهای کاربر (`f3dd905`):**
-   - متد `save_regex_to_storage` برای حفظ عبارات فیلتر Include/Exclude.
-6. **تنظیم پیش‌فرض حساسیت‌ها به مقدار ۱ (`93f321e`):**
-   - فعال بودن پیش‌فرض تمام فلگ‌های `MutationObserver`.
+   - پاک‌سازی کامل اطلاعات یتیم در زمان حذف مبدأ.
 
 ---
 
 ## ۸. باگ‌ها، رفتارهای غیرمنتظره و نکات فنی قابل بهبود (Known Issues)
 
-1. ⚠️ **امکان بروز خطا با ورودی نامعتبر Regex در مودال:**
+1. ⚠️ **امکان بروز خطا با ورودی نامعتبر Regex در مودال خزش:**
    کد `new RegExp(pattern, 'i')` مستقیماً روی متن‌های ویرایش‌شده کاربر در `contenteditable` اجرا می‌شود؛ ورودی‌های نامعتبر کاربر باید با `try / catch` محافظت شوند.
 2. ⚠️ **امنیت تزریق DOM در لیست فایل‌های JS (`modal.js`):**
    در تابع `renderJsFileList` از اینترپولیشن مستقیم در `innerHTML` استفاده شده است (`href="${link}"` و `title="${link}"`). استفاده از متدهای امن مانند `setAttribute` ترجیح دارد.
@@ -259,8 +270,6 @@ sequenceDiagram
    در `manifest.json` پرمیشن `scripting` درخواست شده اما در هیچ فایلی از API `chrome.scripting` استفاده نشده است.
 5. ⚠️ **محدودیت احتمالی CSP برای Blob Worker در برخی سایت‌ها:**
    برخی از سایت‌ها با فعال‌سازی هدر سخت‌گیرانه `Content-Security-Policy` با مقدار `worker-src 'none'` ممکن است مانع ساخت Web Worker از طریق Blob URL در `content.js` شوند.
-6. ⚠️ **گزینه `base-url-predict` در پنجره مودال:**
-   در HTML و استایل‌ها وجود دارد و متغیر آن در `modal.js` خوانده می‌شود، اما منطق کاربردی آن هنوز به طور کامل درون فیلتر خزش اعمال نشده است.
 
 ---
 
@@ -274,7 +283,7 @@ sequenceDiagram
    - در صورت تغییر در فایل‌های داشبورد (`dashboard.html`, `assets/js/*`, `assets/styles/*`): کافیست تب داشبورد را در مرورگر Refresh نمایید.
 5. برای تست سریع صحت نحوی کدها در محیط ترمینال می‌توانید دستور زیر را اجرا کنید:
    ```powershell
-   node --check background.js content.js worker.js assets/js/pattern_matcher.js assets/js/addorigin.js assets/js/dashboard.js assets/js/dash_checker.js assets/js/helpers.js assets/js/modal.js assets/js/sensitivities.js
+   node --check background.js content.js worker.js assets/js/pattern_matcher.js assets/js/addorigin.js assets/js/dashboard.js assets/js/dash_checker.js assets/js/helpers.js assets/js/modal.js assets/js/sensitivities.js assets/js/subdomains.js
    ```
 
 ---

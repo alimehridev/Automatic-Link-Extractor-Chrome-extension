@@ -53,7 +53,8 @@
   resize: none;
 }
 
-.modal-content .info-bar #copyBtn{
+.modal-content .info-bar #copyBtn,
+.modal-content .info-bar #copySubdomainsBtn{
   background-color: #5b5b5b;
   padding: 3px 4px;
   border-radius: 5px;

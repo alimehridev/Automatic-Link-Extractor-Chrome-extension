@@ -72,6 +72,7 @@ input[type="text"] {
 #save_sensitivities, 
 #addUrlBtn, 
 #get_js_links, 
+#extract_subdomains, 
 #removeAllBtn, 
 #copy_all {
     padding: 10px 15px;
@@ -88,10 +89,13 @@ input[type="text"] {
 #removeAllBtn {
   background-color: #ff0000;
 }
+#extract_subdomains {
+  background-color: #7b2cbf;
+}
 #get_js_links {
   background-color: #af3333;
 }
-#addBtn:hover, #save_sensitivities:hover, #addUrlBtn:hover, #copy_all:hover, #get_js_links:hover, #removeAllBtn:hover, #discovered_parameters_header span:hover {
+#addBtn:hover, #save_sensitivities:hover, #addUrlBtn:hover, #copy_all:hover, #get_js_links:hover, #extract_subdomains:hover, #removeAllBtn:hover, #discovered_parameters_header span:hover {
     background-color: #45a049;
 }
 

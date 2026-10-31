@@ -201,6 +201,7 @@
       <div class="buttons_container" style="margin-top: 10px;">
         <button id="copy_all">Copy all to clipboard</button>
         <button id="get_js_links">Extract links from JS files</button>
+        <button id="extract_subdomains">Extract subdomains</button>
         <button id="removeAllBtn">Remove all links</button>
       </div>
 
@@ -264,10 +265,45 @@
         </div>
       </div>
 
+      <div id="subdomainModal" class="modal">
+        <div class="modal-content">
+          <span id="closeSubdomainModalBtn" class="close-btn">&times;</span>
+          <h3 style="margin-bottom: 8px; color: #333;">🌐 Extracted Origins &amp; Subdomains</h3>
+          <div style="margin-bottom: 12px; font-size: 13px; color: #555;">
+            Target Root Domain: <strong id="subdomainRootDomain" style="color: #0066ff;">-</strong>
+          </div>
+          <div class="crawler-options" style="margin-bottom: 12px;">
+            <div class="other-opt" style="padding: 10px 5px 2px 5px; margin-top: 5px;">
+              <span class="span-title">Filter Options</span>
+              <div style="display: flex; margin-bottom: 7px; align-items: center;">
+                <input type="checkbox" name="only-tld-subdomains" id="only-tld-subdomains" style="margin-right: 6px; cursor: pointer;">
+                <label for="only-tld-subdomains" style="cursor: pointer; font-size: 13px;">Only show TLD+1 subdomains (<span id="subdomainRootDomainLabel">-</span>)</label>
+              </div>
+              <div style="display: flex; margin-bottom: 7px; align-items: center;">
+                <input type="checkbox" name="include-protocol" id="include-protocol" style="margin-right: 6px; cursor: pointer;">
+                <label for="include-protocol" style="cursor: pointer; font-size: 13px;">Include protocol (full Origin: https://...)</label>
+              </div>
+            </div>
+          </div>
+          <div>
+            <textarea name="subdomainOutput" id="subdomainOutput" readonly style="height: 180px; font-family: monospace;"></textarea>
+          </div>
+          <div class="info-bar">
+            <span id="subdomainCount" class="links-number">0 items</span>
+            <span id="copySubdomainsBtn">copy</span>
+          </div>
+          <div class="modal-buttons" style="margin-top: 10px; display: flex; gap: 8px;">
+            <button id="refetchSubdomainsBtn" style="background-color: #0066ff; color: white;">⟳ Re-fetch</button>
+            <button id="copySubdomainsMainBtn" style="background-color: #4CAF50; color: white;">Copy to clipboard</button>
+          </div>
+        </div>
+      </div>
+
       <script src="assets/js/pattern_matcher.js"></script>
       <script src="assets/js/dashboard.js"></script>
       <script src="assets/js/sensitivities.js"></script>
       <script src="assets/js/modal.js"></script>
+      <script src="assets/js/subdomains.js"></script>
       <script src="assets/js/helpers.js"></script>
     </div>
     <script src="assets/js/dash_checker.js"></script>

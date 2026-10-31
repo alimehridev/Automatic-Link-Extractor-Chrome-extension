@@ -63,6 +63,7 @@ Automatic Link Extractor - Chrome extension/
         ├── dashboard.js       # Origin dashboard: sensitivities + links list + pagination
         ├── sensitivities.js   # Save MutationObserver sensitivity toggles
         ├── modal.js           # JS-file crawler modal (fetch JS, regex-extract links)
+        ├── subdomains.js      # eTLD+1 root domain & subdomain extractor modal
         └── helpers.js         # Shared dashboard helpers (copy, remove-all)
 ```
 
@@ -384,6 +385,15 @@ Known issues).
 - `#addLinksToTargetBtn` merges `#output` lines into `links[origin]` and reloads.
 - `#copyBtn` copies the output textarea.
 
+### `assets/js/subdomains.js` (Origins & Subdomains Extractor)
+- Activated by `#extract_subdomains` button below JS crawler in dashboard.
+- By default displays all discovered origins/domains across all stored links.
+- Includes an optional checkbox (`#only-tld-subdomains`) to filter down strictly to eTLD+1 subdomains of the target domain.
+- Includes an optional checkbox (`#include-protocol`) to toggle between clean hostnames and full origins (`https://...`).
+- Includes a live `#refetchSubdomainsBtn` to re-read links from storage and refresh the list without closing the modal.
+- Identifies the target's eTLD+1 root domain (with multi-part suffix support for `.co.uk`, `.ac.ir`, `.com.tr`, etc.).
+- Renders results inside `#subdomainModal` with target root domain label, item count, and clipboard copy buttons.
+
 ### `assets/styles/*.css`
 - `style.css` — dashboard layout, `.page`/`.link` rows, `.keyword`, toggle switches,
   pagination buttons, `.removeLogBtn`, etc.
@@ -589,3 +599,6 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   active patterns dynamically; multiple matching patterns are all updated when persisting links.
 - **Dashboard Stability Fixes:** Fixed zero-links pagination crash, single-link removal handler,
   storage cleanup on origin removal, and URL parameter parsing with `URLSearchParams`.
+- **Origins & Subdomains Extractor:** Added `#extract_subdomains` button, `#subdomainModal`, and
+  `assets/js/subdomains.js`. Displays all discovered origins by default, with an optional `#only-tld-subdomains`
+  checkbox for root domain eTLD+1 subdomains, protocol toggle, and a live `#refetchSubdomainsBtn`.
