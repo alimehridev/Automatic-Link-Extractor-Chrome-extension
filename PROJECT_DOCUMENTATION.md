@@ -238,8 +238,9 @@ flowchart TD
 
 ### `assets/js/addorigin.js`
 - افزودن الگوها با انکود امن URL (`encodeURIComponent`).
-- مقداردهی اولیه `sensitivities`، `regexes` و `links`.
-- پاک‌سازی کامل تمام کلیدهای وابسته (`sensitivities`, `regexes`, `links`) در هنگام حذف یک الگو.
+- مقداردهی اولیه `sensitivities`، `regexes`، `extraction_rules` و `links`.
+- نمایش دیالوگ تأیید (`confirm()`) قبل از حذف مبدأ در دکمه `.removeLogBtn`.
+- پاک‌سازی کامل تمام کلیدهای وابسته (`origins`, `sensitivities`, `regexes`, `extraction_rules`, `links`) به همراه پوشش واریانت‌های مختلف در هنگام حذف یک الگو.
 
 ### `assets/js/dashboard.js`
 - حل مشکل کرش صفحه در زمان خالی بودن لینک‌ها (گارد روی `page_count > 0`).
@@ -274,7 +275,11 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **حذف پرمیشن بلااستفاده `scripting` از مانیفست (`manifest.json`):**
+1. **افزودن دیالوگ تأیید (Confirm) و پاک‌سازی کامل داده‌ها در حذف Origin (`addorigin.js`):**
+   - نمایش پیام تأیید `confirm()` پیش از اقدام به حذف Origin در دکمه‌های `.removeLogBtn` جهت پیشگیری از حذف تصادفی.
+   - حذف همه‌جانبه تمام داده‌های ذخیره‌شده مرتبط با مبدأ/الگو از استوریج (`links`، `regexes`، `extraction_rules`، `sensitivities`) به همراه پوشش کلیه واریانت‌های ممکن (با و بدون اسلش پایانی، کدگذاری URL و trim).
+   - توقف انتشار رویداد با `stopPropagation` و هدایت صحیح کاربر به ریشه داشبورد در صورت باز بودن تب تارگت حذف‌شده.
+2. **حذف پرمیشن بلااستفاده `scripting` از مانیفست (`6f3dfd5`):**
    - حذف مجوز غیرضروری `"scripting"` از آرایه `permissions` در `manifest.json`.
    - پیروی از اصل حداقل دسترسی (Least Privilege) و برطرف کردن هشدارهای غیرضروری مجوزها در مرورگر.
 2. **حذف کد مرده در پیام‌رسانی `content.js` (`3d06a0f`):**

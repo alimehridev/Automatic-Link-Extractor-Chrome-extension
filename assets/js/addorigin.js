@@ -4,19 +4,40 @@ const originList = document.getElementById("data");
 const dataDiv = document.getElementById("data");
 
 function remove_origin_from_list(payload) {
+    if (!payload) return;
+
+    const confirmed = confirm(`Are you sure you want to delete origin "${payload}" and all its associated data (links, regexes, settings)?`);
+    if (!confirmed) return;
+
     chrome.storage.local.get(["origins", "sensitivities", "regexes", "links", "extraction_rules"], (result) => {
         if (!result["origins"] || result["origins"].length === 0) return;
 
-        const updatedOrigins = result["origins"].filter((item) => item !== payload);
+        const trimmed = payload.trim();
+        const withSlash = trimmed.endsWith('/') ? trimmed : trimmed + '/';
+        const withoutSlash = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+        const variants = new Set([
+            payload,
+            trimmed,
+            withSlash,
+            withoutSlash,
+            encodeURIComponent(payload),
+            decodeURIComponent(payload),
+            encodeURIComponent(trimmed),
+            decodeURIComponent(trimmed)
+        ]);
+
+        const updatedOrigins = (result["origins"] || []).filter((item) => !variants.has(item));
         const sensitivities = result["sensitivities"] || {};
         const regexes = result["regexes"] || {};
         const links = result["links"] || {};
         const extraction_rules = result["extraction_rules"] || {};
 
-        delete sensitivities[payload];
-        delete regexes[payload];
-        delete links[payload];
-        delete extraction_rules[payload];
+        variants.forEach(key => {
+            delete sensitivities[key];
+            delete regexes[key];
+            delete links[key];
+            delete extraction_rules[key];
+        });
 
         chrome.storage.local.set({
             origins: updatedOrigins,
@@ -25,7 +46,12 @@ function remove_origin_from_list(payload) {
             extraction_rules: extraction_rules,
             links: links
         }, () => {
-            location.reload();
+            const currentOrigin = new URLSearchParams(window.location.search).get("origin");
+            if (currentOrigin && variants.has(currentOrigin)) {
+                window.location.href = window.location.pathname;
+            } else {
+                location.reload();
+            }
         });
     });
 }
@@ -112,7 +138,9 @@ chrome.storage.local.get("origins", (result) => {
 
         let remove_btn = document.createElement("span");
         remove_btn.classList.add("removeLogBtn");
-        remove_btn.addEventListener("click", () => {
+        remove_btn.title = "Delete origin and all its data";
+        remove_btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             remove_origin_from_list(item);
         });
         remove_btn.innerText = "x";

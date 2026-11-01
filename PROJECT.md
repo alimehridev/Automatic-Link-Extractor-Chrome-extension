@@ -336,8 +336,9 @@ dashboard; if `origin_add=` (or neither) → show the add-origin view, pre-filli
 Known issues).
 
 ### `assets/js/addorigin.js`
-- `remove_origin_from_list(payload)` — removes an origin from `origins` (and reloads).
-  Only touches `origins`, **not** `sensitivities`, `regexes`, or `links`.
+- `remove_origin_from_list(payload)` — prompts for confirmation with `confirm()`, deletes the origin
+  from `origins`, and cascades removal across `sensitivities`, `regexes`, `extraction_rules`, and `links`
+  (including trailing slash and encoding variants), redirecting cleanly if the active target was removed.
 - Add button: builds a row, writes to `origins`, initializes `sensitivities` (defaults all flags to 1),
   `regexes` (`{includes: [], excludes: []}`), and `links` (`[]`) for the new origin, and immediately
   redirects the window to `?origin=<value>` (commit `4c681b0`).
@@ -493,7 +494,7 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 7. **`window.postMessage({action:"continue"})` dead code (FIXED).** Removed unused `window.postMessage`
    call after `chrome.storage.local.set` in `content.js`, eliminating dead messaging code and unnecessary host page event pollution.
 8. **`scripting` permission declared but unused (FIXED).** Removed unused `"scripting"` from `permissions` in `manifest.json`.
-9. **Origin deletion storage cleanup (FIXED).** `remove_origin_from_list` now removes `sensitivities`, `regexes`, and `links` associated with the pattern.
+9. **Origin deletion storage cleanup & confirm (FIXED).** `remove_origin_from_list` prompts for confirmation with `confirm()`, deletes the target from `origins`, and cascades deletion across `sensitivities`, `regexes`, `extraction_rules`, and `links` (covering slash and encoding variants).
 10. **Blob-worker CSP:** creating a Worker from a `blob:` URL inside a content script can be
     blocked by a page's Content-Security-Policy (`worker-src`) on some sites. If links stop
     appearing on a specific site, check the console for CSP worker errors.
@@ -629,3 +630,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **JS File List DOM Safety & XSS Prevention:** Replaced raw `div.innerHTML` interpolation in `renderJsFileList` (`assets/js/modal.js`) with safe DOM element instantiation (`createElement`, `setAttribute`, `textContent`, `rel="noopener noreferrer"`). Ensured `current_file` and regex values are set via `textContent` rather than `innerHTML`.
 - **Dead Code Cleanup (`content.js`):** Removed unused `window.postMessage({ action: "continue", url: location.href })` dispatch after storing links, eliminating dead messaging overhead and window event pollution.
 - **Unused Permission Removal (`manifest.json`):** Removed unused `"scripting"` permission from `manifest.json`, adhering to least-privilege standards and eliminating unnecessary extension install warnings.
+- **Confirmed Origin & Storage Cascade Deletion (`addorigin.js`):** Added user confirmation (`confirm()`) when clicking `.removeLogBtn` on target origin rows, and ensured complete cascading deletion of all associated keys across `origins`, `sensitivities`, `regexes`, `extraction_rules`, and `links` including trailing slash and encoding variations.
