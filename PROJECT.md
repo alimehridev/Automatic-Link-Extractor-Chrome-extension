@@ -387,8 +387,8 @@ Known issues).
     (`response.url || link`, i.e. the post-redirect URL) so relative links become absolute:
     `/x` → file origin, `./x` / `../x` → file directory, `//host` → file scheme.
   - `isValidLink(link)` — validates the resolved URL.
-  - Applies user include regexes (`new RegExp(pattern, "i")`) then exclude regexes, dedupes
-    and sorts, writes to `#output`, updates progress + per-file status code.
+  - Applies user include regexes then exclude regexes safely wrapped in `try/catch` (`new RegExp(pattern, "i")`),
+    dedupes and sorts, writes to `#output`, updates progress + per-file status code.
 - `#addLinksToTargetBtn` merges `#output` lines into `links[origin]` and reloads.
 - `#copyBtn` copies the output textarea.
 
@@ -487,9 +487,8 @@ These are real defects or sharp edges; some are intentional, some are bugs:
    in a **cross-origin/CDN** script resolves to the CDN origin, not the target site; and a
    page's `<base href>` is unknowable when crawling a fetched file. Legacy stored data may
    still contain relative entries.
-5. **User include/exclude regexes can throw.** `new RegExp(pattern, "i")` is called on
-   free-text from `contenteditable` spans; an invalid pattern throws inside the filter and
-   breaks extraction for that file. Wrap in try/catch or pre-validate.
+5. **User include/exclude regexes can throw (FIXED in `modal.js` and `subdomains.js`).** `new RegExp(pattern, "i").test(...)`
+   is safely wrapped inside `try/catch` returning `false` on `SyntaxError`, preventing crawl cancellation or UI crashes on invalid/incomplete patterns.
 6. **`modal.js` builds HTML with `div.innerHTML` interpolating `link`** into attributes
    (`title="${link}"`, `href="${link}"`). A crafted URL containing quotes could inject
    markup. Prefer `textContent` / `setAttribute`.
@@ -629,3 +628,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **Extraction Settings & UI Layout Optimization:** Reorganized dashboard controls: moved `#removeAllBtn` to header next to `+`, transformed `#copy_all` into a right-aligned link beneath `#links`, and integrated `#open_settings` (with SVG gear icon) into the primary tool container. Added `#settingsModal` allowing per-target Include/Exclude regex rules persisted in `chrome.storage.local.extraction_rules` and enforced dynamically in `content.js`.
 - **Network Resource Timing Link Extraction:** Added passive real-time resource timing monitoring in `content.js` via `PerformanceObserver` and `performance.getEntriesByType("resource")`, capturing background AJAX/fetch requests, beacons, and dynamically loaded network assets.
 - **Search with Pagination & Filtered Copy:** Added a live search input (`#searchLinksInput`) below the extracted links header with real-time substring filtering, dynamic in-place pagination, seamless URL synchronization (`page` and `q`), and updated `#copy_all` to strictly copy search-filtered results when an active search query is present.
+- **JS Crawler Regex Safety:** Wrapped Include and Exclude `new RegExp` evaluations in `assets/js/modal.js` in defensive `try/catch` blocks, preventing `SyntaxError` from rejecting fetch promises and breaking extraction when users type incomplete/invalid regex patterns. Also introduced `getRegexList` helper and safe storage sync upon regex pill removal.

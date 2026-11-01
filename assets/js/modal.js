@@ -3,9 +3,20 @@ function getQueryParam(param) {
   return urlParams.get(param);
 }
 
+function getRegexList(containerSelector) {
+  const container = document.querySelector(containerSelector);
+  if (!container) return [];
+  return [...container.querySelectorAll(".custom-regex")]
+    .map(i => {
+      const el = i.querySelector(".regex-value");
+      return el ? el.innerText.trim() : "";
+    })
+    .filter(i => i && i !== "YOUR_REGEX");
+}
+
 function save_regex_to_storage(){
-  let include_regexes = [...document.querySelector(".regex-include").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
-  let exclude_regexes = [...document.querySelector(".regex-exclude").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
+  let include_regexes = getRegexList(".regex-include");
+  let exclude_regexes = getRegexList(".regex-exclude");
 
   chrome.storage.local.get("regexes", (result) => {
       const arr = result["regexes"] || {};
@@ -13,7 +24,7 @@ function save_regex_to_storage(){
       arr[getQueryParam("origin")] = {
         includes: [...include_regexes, "YOUR_REGEX"],
         excludes: [...exclude_regexes, "YOUR_REGEX"]
-      }
+      };
       chrome.storage.local.set({ ["regexes"]: arr }, () => {});
   });
 }
@@ -110,8 +121,10 @@ document.getElementById("get_js_links").addEventListener("click", () => {
   let custom_regexes = el1.parentElement.nextElementSibling
   custom_regexes.innerHTML = ""
   chrome.storage.local.get("regexes", (result) => {
-    let regexes = result["regexes"][getQueryParam("origin")] || [];
-    regexes.includes.forEach(re => {
+    let regexesData = (result["regexes"] && result["regexes"][getQueryParam("origin")]) || {};
+    let incList = Array.isArray(regexesData.includes) ? regexesData.includes : ["YOUR_REGEX"];
+    let excList = Array.isArray(regexesData.excludes) ? regexesData.excludes : ["YOUR_REGEX"];
+    incList.forEach(re => {
       let el1 = document.getElementsByClassName("add-regex-include")[0]
       let custom_regexes = el1.parentElement.nextElementSibling
       let custom_regex = document.createElement("div")
@@ -141,7 +154,7 @@ document.getElementById("get_js_links").addEventListener("click", () => {
     let el2 = document.getElementsByClassName("add-regex-exclude")[0]
     custom_regexes = el2.parentElement.nextElementSibling
     custom_regexes.innerHTML = ""
-    regexes.excludes.forEach(re => {
+    excList.forEach(re => {
       let el2 = document.getElementsByClassName("add-regex-exclude")[0]
       custom_regexes = el2.parentElement.nextElementSibling
       let custom_regex = document.createElement("div")
@@ -223,8 +236,8 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       if(response.status === 200){
         status_code_el.style.color = "#00a900"
       }
-      let include_regexes = [...document.querySelector(".regex-include").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
-      let exclude_regexes = [...document.querySelector(".regex-exclude").querySelectorAll(".custom-regex")].map(i => i.querySelector(".regex-value").innerText).filter(i => i !== "YOUR_REGEX")
+      let include_regexes = getRegexList(".regex-include");
+      let exclude_regexes = getRegexList(".regex-exclude");
       // Absolute: any listed scheme, or a protocol-relative //host URL.
       const absoluteRegex = /(?:(?:https?|ftps?|wss?):)?\/\/[^\s"'`<>\\^|{}\[\]]+/gi;
       // Relative: only when it is a whole quoted string literal, so it cannot
@@ -249,13 +262,27 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       output_links = [...new Set(output_links)]
       output_links = output_links.filter(item => item.length > 0)
       output_links = output_links.filter(isValidLink)
-      if((include_regexes.length > 0)){
+      if (include_regexes.length > 0) {
         output_links = output_links.filter(link =>
-            include_regexes.some(pattern => new RegExp(pattern, 'i').test(link))
+          include_regexes.some(pattern => {
+            try {
+              return new RegExp(pattern, 'i').test(link);
+            } catch (e) {
+              return false;
+            }
+          })
         );
       }
-      if((exclude_regexes.length > 0)){
-        output_links = output_links.filter(link => !exclude_regexes.some(p => new RegExp(p, "i").test(link)))
+      if (exclude_regexes.length > 0) {
+        output_links = output_links.filter(link =>
+          !exclude_regexes.some(p => {
+            try {
+              return new RegExp(p, "i").test(link);
+            } catch (e) {
+              return false;
+            }
+          })
+        );
       }
       output_links.sort()
       if(decodeURLCheckBox){
@@ -344,6 +371,7 @@ document.getElementsByClassName("add-regex-include")[0].addEventListener("click"
   custom_regex.appendChild(remove_regex_span)
   remove_regex_span.addEventListener("click", () => {
     custom_regex.remove()
+    save_regex_to_storage()
   })
   custom_regexes.appendChild(custom_regex)
 })
@@ -376,6 +404,7 @@ document.getElementsByClassName("add-regex-exclude")[0].addEventListener("click"
   custom_regex.appendChild(remove_regex_span)
   remove_regex_span.addEventListener("click", () => {
     custom_regex.remove()
+    save_regex_to_storage()
   })
   custom_regexes.appendChild(custom_regex)
 })
