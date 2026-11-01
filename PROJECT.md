@@ -492,7 +492,7 @@ These are real defects or sharp edges; some are intentional, some are bugs:
    interpolation in `renderJsFileList` with safe DOM element creation (`document.createElement`, `setAttribute`, `textContent`, `rel="noopener noreferrer"`). Also sanitized dynamic `textContent` assignments for `current_file` and regex values.
 7. **`window.postMessage({action:"continue"})` dead code (FIXED).** Removed unused `window.postMessage`
    call after `chrome.storage.local.set` in `content.js`, eliminating dead messaging code and unnecessary host page event pollution.
-8. **`scripting` permission is declared but unused.**
+8. **`scripting` permission declared but unused (FIXED).** Removed unused `"scripting"` from `permissions` in `manifest.json`.
 9. **Origin deletion storage cleanup (FIXED).** `remove_origin_from_list` now removes `sensitivities`, `regexes`, and `links` associated with the pattern.
 10. **Blob-worker CSP:** creating a Worker from a `blob:` URL inside a content script can be
     blocked by a page's Content-Security-Policy (`worker-src`) on some sites. If links stop
@@ -561,8 +561,7 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - Validate/fuzz the include/exclude regexes in the modal (they currently `new RegExp()`
   raw user text and can throw).
 - Replace `innerHTML` interpolation in `renderJsFileList` with safe DOM APIs.
-- Removed the unused `window.postMessage({action:"continue"})`. Remove the `scripting`
-  permission if truly unused.
+- Removed unused `window.postMessage({action:"continue"})` and `scripting` permission.
 - Optionally capture resource-timing entries (`performance.getEntriesByType("resource")`) to
   also catch scripts injected and removed before `document_start` capture, and attach
   observers to same-origin iframe documents for live iframe content.
@@ -629,3 +628,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **JS Crawler Regex Safety:** Wrapped Include and Exclude `new RegExp` evaluations in `assets/js/modal.js` in defensive `try/catch` blocks, preventing `SyntaxError` from rejecting fetch promises and breaking extraction when users type incomplete/invalid regex patterns. Also introduced `getRegexList` helper and safe storage sync upon regex pill removal.
 - **JS File List DOM Safety & XSS Prevention:** Replaced raw `div.innerHTML` interpolation in `renderJsFileList` (`assets/js/modal.js`) with safe DOM element instantiation (`createElement`, `setAttribute`, `textContent`, `rel="noopener noreferrer"`). Ensured `current_file` and regex values are set via `textContent` rather than `innerHTML`.
 - **Dead Code Cleanup (`content.js`):** Removed unused `window.postMessage({ action: "continue", url: location.href })` dispatch after storing links, eliminating dead messaging overhead and window event pollution.
+- **Unused Permission Removal (`manifest.json`):** Removed unused `"scripting"` permission from `manifest.json`, adhering to least-privilege standards and eliminating unnecessary extension install warnings.
