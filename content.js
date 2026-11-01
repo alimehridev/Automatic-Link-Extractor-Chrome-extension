@@ -241,10 +241,6 @@ chrome.storage.local.get("origins", (result) => {
             }
 
             chrome.storage.local.set({ links: linksByOrigin }, () => {
-              window.postMessage({
-                action: "continue",
-                url: location.href
-              });
               resolve();
             });
           });
