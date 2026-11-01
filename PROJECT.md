@@ -296,6 +296,7 @@ Responsibilities and structure (top to bottom):
      waits with a temporary `document` observer until it does.
   7. Initial capture: drain the early observer, scan the whole document, `queue(...)`, then
      `startObserving()`.
+  8. Network Resource Timing: observes network-level requests (Fetch, XHR, beacons, dynamic assets) via `PerformanceObserver({ type: "resource", buffered: true })` and `performance.getEntriesByType("resource")`.
 
 **Invariants to preserve:**
 - Never pass DOM nodes through `postMessage` (not structured-cloneable) — always send
@@ -617,4 +618,5 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   applying live regex matching to displayed origins/subdomains without persisting to storage.
 - **Subdomains Modal UI Refinement:** Cleaned up the modal footer, removing redundant buttons and standardizing on the top copy button and live reactive filtering.
 - **Manual Links Importer:** Added a `+` button next to `🔍 Extracted Links` in `dashboard.html` and modal `#addLinksModal` handled by `assets/js/custom_links.js`, allowing users to paste and append custom links into the target's link storage with automatic deduplication.
+- **Network Resource Timing Link Extraction:** Added passive real-time resource timing monitoring in `content.js` via `PerformanceObserver` and `performance.getEntriesByType("resource")`, capturing background AJAX/fetch requests, beacons, and dynamically loaded network assets.
 - **Search with Pagination & Filtered Copy:** Added a live search input (`#searchLinksInput`) below the extracted links header with real-time substring filtering, dynamic in-place pagination, seamless URL synchronization (`page` and `q`), and updated `#copy_all` to strictly copy search-filtered results when an active search query is present.

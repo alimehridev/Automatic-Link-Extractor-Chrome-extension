@@ -322,6 +322,71 @@ chrome.storage.local.get("origins", (result) => {
 
       // 3) Watch for changes from now on.
       startObserving();
+
+      // 4) Watch and capture network resource timing entries (fetch, XHR, scripts, styles, beacons, etc.)
+      function captureResources() {
+        if (typeof performance === "undefined" || !performance.getEntriesByType) return;
+        try {
+          const resources = performance.getEntriesByType("resource");
+          const urls = [];
+          for (const res of resources) {
+            if (res && res.name) urls.push(res.name);
+          }
+          if (urls.length) queue(urls);
+        } catch (e) {}
+
+        // Check same-origin iframes for network resources
+        try {
+          const frames = document.querySelectorAll("iframe, frame");
+          for (const frame of frames) {
+            try {
+              const childDoc = frame.contentDocument;
+              if (childDoc && childDoc.defaultView && childDoc.defaultView.performance) {
+                const res = childDoc.defaultView.performance.getEntriesByType("resource");
+                const urls = [];
+                for (const r of res) {
+                  if (r && r.name) urls.push(r.name);
+                }
+                if (urls.length) queue(urls);
+              }
+            } catch (err) {}
+          }
+        } catch (e) {}
+      }
+
+      function observeNetworkResources() {
+        captureResources();
+
+        if (typeof PerformanceObserver !== "undefined") {
+          try {
+            const perfObserver = new PerformanceObserver((list) => {
+              const entries = list.getEntries();
+              const urls = [];
+              for (const entry of entries) {
+                if (entry && entry.name) urls.push(entry.name);
+              }
+              if (urls.length) queue(urls);
+            });
+            perfObserver.observe({ type: "resource", buffered: true });
+          } catch (e) {
+            try {
+              const perfObserver = new PerformanceObserver((list) => {
+                const entries = list.getEntries();
+                const urls = [];
+                for (const entry of entries) {
+                  if (entry && entry.name) urls.push(entry.name);
+                }
+                if (urls.length) queue(urls);
+              });
+              perfObserver.observe({ entryTypes: ["resource"] });
+            } catch (err) {}
+          }
+        }
+
+        window.addEventListener("load", captureResources, { once: true });
+      }
+
+      observeNetworkResources();
     });
   });
 });
