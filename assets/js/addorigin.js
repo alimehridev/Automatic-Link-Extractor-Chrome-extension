@@ -4,22 +4,25 @@ const originList = document.getElementById("data");
 const dataDiv = document.getElementById("data");
 
 function remove_origin_from_list(payload) {
-    chrome.storage.local.get(["origins", "sensitivities", "regexes", "links"], (result) => {
+    chrome.storage.local.get(["origins", "sensitivities", "regexes", "links", "extraction_rules"], (result) => {
         if (!result["origins"] || result["origins"].length === 0) return;
 
         const updatedOrigins = result["origins"].filter((item) => item !== payload);
         const sensitivities = result["sensitivities"] || {};
         const regexes = result["regexes"] || {};
         const links = result["links"] || {};
+        const extraction_rules = result["extraction_rules"] || {};
 
         delete sensitivities[payload];
         delete regexes[payload];
         delete links[payload];
+        delete extraction_rules[payload];
 
         chrome.storage.local.set({
             origins: updatedOrigins,
             sensitivities: sensitivities,
             regexes: regexes,
+            extraction_rules: extraction_rules,
             links: links
         }, () => {
             location.reload();
@@ -33,11 +36,12 @@ addOriginBtn.addEventListener("click", () => {
 
     input.value = "";
 
-    chrome.storage.local.get(["origins", "sensitivities", "regexes", "links"], (result) => {
+    chrome.storage.local.get(["origins", "sensitivities", "regexes", "links", "extraction_rules"], (result) => {
         const origins = result["origins"] || [];
         const sensitivities = result["sensitivities"] || {};
         const regexes = result["regexes"] || {};
         const links = result["links"] || {};
+        const extraction_rules = result["extraction_rules"] || {};
 
         if (!origins.includes(value)) {
             origins.push(value);
@@ -61,6 +65,13 @@ addOriginBtn.addEventListener("click", () => {
             };
         }
 
+        if (!Object.keys(extraction_rules).includes(value)) {
+            extraction_rules[value] = {
+                includes: ["YOUR_REGEX"],
+                excludes: ["YOUR_REGEX"]
+            };
+        }
+
         if (!Object.keys(links).includes(value)) {
             links[value] = [];
         }
@@ -69,6 +80,7 @@ addOriginBtn.addEventListener("click", () => {
             origins: origins,
             sensitivities: sensitivities,
             regexes: regexes,
+            extraction_rules: extraction_rules,
             links: links
         }, () => {
             window.location.href = window.location.origin + window.location.pathname + `?origin=${encodeURIComponent(value)}`;
@@ -98,13 +110,13 @@ chrome.storage.local.get("origins", (result) => {
         kw.appendChild(a);
         pageDiv.appendChild(kw);
 
-        let remove_url_btn = document.createElement("span");
-        remove_url_btn.classList.add("removeLogBtn");
-        remove_url_btn.addEventListener("click", () => {
+        let remove_btn = document.createElement("span");
+        remove_btn.classList.add("removeLogBtn");
+        remove_btn.addEventListener("click", () => {
             remove_origin_from_list(item);
         });
-        remove_url_btn.innerText = "x";
-        pageDiv.appendChild(remove_url_btn);
+        remove_btn.innerText = "x";
+        pageDiv.appendChild(remove_btn);
 
         dataDiv.appendChild(pageDiv);
     });

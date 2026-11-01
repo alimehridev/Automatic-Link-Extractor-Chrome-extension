@@ -192,6 +192,13 @@ flowchart TD
 
 ## ۶. بررسی تفکیکی فایل‌های پروژه
 
+### `assets/js/settings.js`
+- مدیریت پنجره مودال تنظیمات استخراج (`#settingsModal`):
+  - باز شدن با کلیک روی دکمه `#open_settings` (دارای آیکون SVG چرخ‌دنده).
+  - مدیریت اینپوت‌های ریجکس Include و Exclude جهت تعیین شروط پذیرش لینک‌های زنده در حین وب‌گردی.
+  - ذخیره‌سازی خودکار در کلید `extraction_rules` در `chrome.storage.local`.
+  - مقداردهی اولیه هنگام افزودن تارگت در `addorigin.js` و پاک‌سازی کامل هنگام حذف تارگت.
+
 ### `assets/js/subdomains.js`
 - مدیریت استخراج Origins و Subdomains:
   - مجموعه `MULTI_PART_TLDS`: پوشش پسوندهای چندبخشی.
@@ -251,11 +258,13 @@ flowchart TD
   - در صورت فعال بودن جستجو در `#searchLinksInput`، منحصراً نتایج منطبق با فیلتر جستجو در کلیپ‌بورد کپی می‌شوند.
 
 ### `dashboard.html`
-- دکمه جدید **Extract subdomains** (`#extract_subdomains`) در زیر دکمه خزش JS.
-- پنجره مودال اختصاصی `#subdomainModal` شامل تنظیمات فیلتر (چک‌باکس‌های `only-tld-subdomains` و `include-protocol`)، اینپوت‌های ریجکس Include/Exclude، نوار اطلاعات تعداد آیتم‌ها و دکمه‌ کپی کلیپ‌بورد.
-- دکمه `+` (`#openAddLinksModalBtn`) در کنار عنوان `🔍 Extracted Links` برای باز کردن مودال اضافه کردن دستی لینک‌ها (`#addLinksModal`).
-- فیلد ورودی جستجو `#searchLinksInput` در زیر عنوان لینک‌های استخراج‌شده برای جستجوی بلادرنگ.
-- لود ماژول‌های `pattern_matcher.js`، `subdomains.js` و `custom_links.js`.
+- چیدمان مدرن و بهینه‌سازی‌شده دکمه‌ها و ابزارها:
+  - دکمه قرمز و جمع‌وجور **Remove All** (`#removeAllBtn`) به همراه دکمه سبز `+` (`#openAddLinksModalBtn`) در کنار هدر `🔍 Extracted Links` قرار گرفته‌اند.
+  - پیوند کلیک‌پذیر راست‌چین **Copy all to clipboard** (`#copy_all`) بلافاصله در زیر فهرست لینک‌ها قرار داده شده است.
+  - دکمه‌های اصلی ابزارها شامل **Extract links from JS files**، **Extract subdomains** و دکمه جدید **Settings** (`#open_settings` با آیکون چرخ‌دنده) در کانتینر پایینی (`.buttons_container`) قرار دارند.
+- پنجره‌های مودال اختصاصی: مودال خزشگر جاوااسکریپت (`#myModal`)، مودال ساب‌دامنه‌ها (`#subdomainModal`)، مودال ورود دستی لینک‌ها (`#addLinksModal`) و مودال تنظیمات استخراج (`#settingsModal`).
+- فیلد جستجوی بلادرنگ `#searchLinksInput`.
+- لود اسکریپت‌های ماژولار: `pattern_matcher.js`، `dashboard.js`، `sensitivities.js`، `modal.js`، `subdomains.js`، `custom_links.js` و `settings.js`.
 
 ### `assets/styles/style.css` و `assets/styles/modal.css`
 - استایل‌دهی بنفش به دکمه `#extract_subdomains` و اعمال استایل دکمه‌های کپی و کادر textarea مودال.
@@ -265,7 +274,14 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **پایش و استخراج هوشمند درخواست‌های شبکه با Resource Timing (تغییر جاری):**
+1. **پیاده‌سازی پنجره مودال Extraction Settings و بهینه‌سازی چیدمان UI (تغییر جاری):**
+   - بازآرایی و چیدمان بهینه دکمه‌ها در داشبورد: انتقال دکمه Remove All به کنار هدر لینک‌ها، قرارگیری پیوند راست‌چین Copy All در زیر جدول لینک‌ها و تجمیع دکمه‌های اکشن اصلی (JS Crawler, Subdomains, Settings) در پنل پایین.
+   - ایجاد دکمه **Settings** با آیکون اختصاصی وکتور SVG در پنل ابزارهای داشبورد.
+   - پیاده‌سازی مودال `#settingsModal` با استایل یکپارچه مودال ساب‌دامنه‌ها.
+   - اضافه شدن فیلترهای زنده **Extraction include regexes** و **Extraction exclude regexes** با ذخیره‌سازی خودکار در `chrome.storage.local.extraction_rules`.
+   - اعمال بلادرنگ فیلترهای ریجکس در `content.js` پیش از ذخیره لینک‌های زنده در دیتابیس.
+   - مدیریت چرخه حیات تنظیمات در `addorigin.js` (مقداردهی در زمان افزودن تارگت و پاک‌سازی کامل در زمان حذف).
+2. **پایش و استخراج هوشمند درخواست‌های شبکه با Resource Timing (`7b1b37a`):**
    - فعال‌سازی `PerformanceObserver` و متد `performance.getEntriesByType("resource")` در `content.js`.
    - شکار خودکار تمام درخواست‌های Fetch, XHR، فایل‌های داینامیک و ترافیک لود شده در پس‌زمینه بدون نیاز به وجود لینک در DOM.
 2. **طراحی و بازنویسی جامع و حرفه‌ای فایل `README.md` (`791dd57`):**

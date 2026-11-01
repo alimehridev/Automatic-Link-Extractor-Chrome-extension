@@ -182,14 +182,48 @@ chrome.storage.local.get("origins", (result) => {
       function persist(links) {
         if (!Array.isArray(links) || links.length === 0) return;
         persistChain = persistChain.then(() => new Promise(resolve => {
-          chrome.storage.local.get("links", (result) => {
+          chrome.storage.local.get(["links", "extraction_rules"], (result) => {
             const linksByOrigin = result["links"] || {};
+            const extractionRules = result["extraction_rules"] || {};
             let anyChanged = false;
             let primaryCount = 0;
 
             for (const pattern of matchingPatterns) {
               const stored = linksByOrigin[pattern] || [];
-              const merged = [...new Set(stored.concat(links, [location.href]))];
+              const rules = extractionRules[pattern] || {};
+              const inc = (rules.includes || []).filter(r => r && r !== "YOUR_REGEX");
+              const exc = (rules.excludes || []).filter(r => r && r !== "YOUR_REGEX");
+
+              let filtered = links;
+              if (inc.length > 0) {
+                filtered = filtered.filter(link =>
+                  inc.some(p => {
+                    try { return new RegExp(p, "i").test(link); } catch (e) { return false; }
+                  })
+                );
+              }
+              if (exc.length > 0) {
+                filtered = filtered.filter(link =>
+                  !exc.some(p => {
+                    try { return new RegExp(p, "i").test(link); } catch (e) { return false; }
+                  })
+                );
+              }
+
+              let includeLocation = true;
+              if (inc.length > 0) {
+                includeLocation = inc.some(p => {
+                  try { return new RegExp(p, "i").test(location.href); } catch (e) { return false; }
+                });
+              }
+              if (includeLocation && exc.length > 0) {
+                includeLocation = !exc.some(p => {
+                  try { return new RegExp(p, "i").test(location.href); } catch (e) { return false; }
+                });
+              }
+
+              const toMerge = includeLocation ? filtered.concat([location.href]) : filtered;
+              const merged = [...new Set(stored.concat(toMerge))];
               if (merged.length !== stored.length) {
                 linksByOrigin[pattern] = merged;
                 anyChanged = true;

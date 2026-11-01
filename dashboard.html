@@ -192,21 +192,24 @@
       <div class="" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
         <h2 style="margin-top: initial; text-align: left; margin-bottom: 0;">🔍 Extracted Links</h2>
         <button id="openAddLinksModalBtn" title="Add links to target">+</button>
+        <button id="removeAllBtn">Remove All</button>
+
       </div>
       <div style="margin-bottom: 10px;">
         <input type="text" id="searchLinksInput" placeholder="🔍 Search extracted links..." style="width: 100%; box-sizing: border-box;">
       </div>
       <div id="origin" style="margin-bottom: 8px;"></div>
+
       <div id="links"></div>
+      <span id="copy_all">Copy all to clipboard</span>
 
       <div class="pagination">
 
       </div>
       <div class="buttons_container" style="margin-top: 10px;">
-        <button id="copy_all">Copy all to clipboard</button>
         <button id="get_js_links">Extract links from JS files</button>
         <button id="extract_subdomains">Extract subdomains</button>
-        <button id="removeAllBtn">Remove all links</button>
+        <button id="open_settings"><img src="assets/images/settings.svg" alt="Settings" style="width: 15px; height: 15px; vertical-align: -2px; margin-right: 5px; filter: brightness(0) invert(1);">Settings</button>
       </div>
 
 
@@ -328,12 +331,38 @@
         </div>
       </div>
 
+      <div id="settingsModal" class="modal">
+        <div class="modal-content">
+          <span id="closeSettingsModalBtn" class="close-btn">&times;</span>
+          <h3 style="margin-bottom: 8px; color: #333;">⚙️ Extraction Settings</h3>
+          <div style="margin-bottom: 12px; font-size: 13px; color: #555;">
+            Target: <strong id="settingsTargetLabel" style="color: #0066ff;">-</strong>
+          </div>
+          <div class="crawler-options" style="margin-bottom: 12px;">
+            <div class="regex regex-extraction-include">
+              <span class="span-title">Extraction include regexes<span class="add-regex add-extraction-regex-include">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="regex regex-extraction-exclude">
+              <span class="span-title">Extraction exclude regexes<span class="add-regex add-extraction-regex-exclude">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 12px; color: #666; margin-top: 6px;">
+            <em>ℹ️ Only links matching include regexes and not matching exclude regexes will be extracted. Rules are saved automatically.</em>
+          </div>
+        </div>
+      </div>
+
       <script src="assets/js/pattern_matcher.js"></script>
       <script src="assets/js/dashboard.js"></script>
       <script src="assets/js/sensitivities.js"></script>
       <script src="assets/js/modal.js"></script>
       <script src="assets/js/subdomains.js"></script>
       <script src="assets/js/custom_links.js"></script>
+      <script src="assets/js/settings.js"></script>
       <script src="assets/js/helpers.js"></script>
     </div>
     <script src="assets/js/dash_checker.js"></script>

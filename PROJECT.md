@@ -65,6 +65,7 @@ Automatic Link Extractor - Chrome extension/
         ├── modal.js           # JS-file crawler modal (fetch JS, regex-extract links)
         ├── subdomains.js      # eTLD+1 root domain & subdomain extractor modal
         ├── custom_links.js    # Manual link importer modal for adding links to target
+        ├── settings.js        # Extraction Settings modal (include/exclude regex rules)
         └── helpers.js         # Shared dashboard helpers (copy, remove-all)
 ```
 
@@ -405,6 +406,13 @@ Known issues).
 - Trims, filters, and deduplicates custom links with `Set` before merging into `chrome.storage.local.links[origin]`.
 - Automatically refreshes the dashboard view upon successful addition.
 
+### `assets/js/settings.js` (Extraction Settings)
+- Activated by `#open_settings` button (styled with gear icon) in `dashboard.html`.
+- Opens `#settingsModal` allowing users to specify live **Include regexes** and **Exclude regexes**.
+- Automatically persists rules into `chrome.storage.local.extraction_rules[origin]`.
+- Initialized on target creation in `addorigin.js` and purged on origin removal.
+- Actively enforced by `content.js` `persist()` to filter which links are stored during live browsing.
+
 ### `assets/styles/*.css`
 - `style.css` — dashboard layout, `.page`/`.link` rows, `.keyword`, toggle switches,
   pagination buttons, `.removeLogBtn`, etc.
@@ -618,5 +626,6 @@ These are real defects or sharp edges; some are intentional, some are bugs:
   applying live regex matching to displayed origins/subdomains without persisting to storage.
 - **Subdomains Modal UI Refinement:** Cleaned up the modal footer, removing redundant buttons and standardizing on the top copy button and live reactive filtering.
 - **Manual Links Importer:** Added a `+` button next to `🔍 Extracted Links` in `dashboard.html` and modal `#addLinksModal` handled by `assets/js/custom_links.js`, allowing users to paste and append custom links into the target's link storage with automatic deduplication.
+- **Extraction Settings & UI Layout Optimization:** Reorganized dashboard controls: moved `#removeAllBtn` to header next to `+`, transformed `#copy_all` into a right-aligned link beneath `#links`, and integrated `#open_settings` (with SVG gear icon) into the primary tool container. Added `#settingsModal` allowing per-target Include/Exclude regex rules persisted in `chrome.storage.local.extraction_rules` and enforced dynamically in `content.js`.
 - **Network Resource Timing Link Extraction:** Added passive real-time resource timing monitoring in `content.js` via `PerformanceObserver` and `performance.getEntriesByType("resource")`, capturing background AJAX/fetch requests, beacons, and dynamically loaded network assets.
 - **Search with Pagination & Filtered Copy:** Added a live search input (`#searchLinksInput`) below the extracted links header with real-time substring filtering, dynamic in-place pagination, seamless URL synchronization (`page` and `q`), and updated `#copy_all` to strictly copy search-filtered results when an active search query is present.
