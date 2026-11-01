@@ -263,7 +263,7 @@ flowchart TD
   - دکمه قرمز و جمع‌وجور **Remove All** (`#removeAllBtn`) به همراه دکمه سبز `+` (`#openAddLinksModalBtn`) در کنار هدر `🔍 Extracted Links` قرار گرفته‌اند.
   - پیوند کلیک‌پذیر راست‌چین **Copy all to clipboard** (`#copy_all`) بلافاصله در زیر فهرست لینک‌ها قرار داده شده است.
   - دکمه‌های اصلی ابزارها شامل **Extract links from JS files**، **Extract subdomains** و دکمه جدید **Settings** (`#open_settings` با آیکون چرخ‌دنده) در کانتینر پایینی (`.buttons_container`) قرار دارند.
-  - بهبود ساختار هدر بخش مبدأها با نشانگر تعداد کل Originها (`#originCountBadge`)، فیلد جستجوی زنده مبدأها (`#searchOriginsInput`) و یادداشت راهنمای وایلدکاردها.
+  - بهبود ساختار هدر بخش مبدأها با نشانگر تعداد کل Originها (`#originCountBadge`)، فیلد جستجوی زنده مبدأها (`#searchOriginsInput`)، یادداشت راهنمای وایلدکاردها و صفحه‌بندی اختصاصی مبدأها (`#originPagination`).
 - پنجره‌های مودال اختصاصی: مودال خزشگر جاوااسکریپت (`#myModal`)، مودال ساب‌دامنه‌ها (`#subdomainModal`)، مودال ورود دستی لینک‌ها (`#addLinksModal`) و مودال تنظیمات استخراج (`#settingsModal`).
 - فیلدهای جستجوی بلادرنگ `#searchLinksInput` و `#searchOriginsInput`.
 - لود اسکریپت‌های ماژولار: `pattern_matcher.js`، `dashboard.js`، `sensitivities.js`، `modal.js`، `subdomains.js`، `custom_links.js` و `settings.js`.
@@ -276,7 +276,12 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **افزودن امکان جستجوی بلادرنگ در فهرست Originها (`dashboard.html` و `addorigin.js`):**
+1. **پیاده‌سازی صفحه‌بندی (Pagination) اختصاصی برای فهرست Originها (`addorigin.js`, `dashboard.html`):**
+   - افزودن کانتینر `#originPagination` با همان استایل بصری استاندارد پیجینیشن لینک‌ها (`.pagination`, `.page-button`, `.page-button-active`).
+   - تنظیم محدودیت ۷ آیتم در هر صفحه (`per_page = 7`) برای خلوت‌تر و منظم‌تر شدن صفحه اصلی داشبورد.
+   - هماهنگی و همگام‌سازی کامل با فیلد جستجوی `#searchOriginsInput` (محاسبه مجدد تعداد صفحات بر اساس نتایج جستجو و بازنشانی خودکار به صفحه اول).
+   - ایزوله‌سازی کوئری سلکتورهای پیجینیشن در `dashboard.js` جهت پیشگیری از تداخل با پیجینیشن لینک‌ها.
+2. **افزودن امکان جستجوی بلادرنگ در فهرست Originها (`e8e7da6`):**
    - افزودن فیلد ورودی `#searchOriginsInput` بلافاصله در زیر هدر `.origin-header`.
    - فیلتر کردن زنده و بلادرنگ کارت‌های مبدأ بر اساس متن وارد شده بدون رفرش صفحه.
    - تطبیق خودکار نشانگر تعداد در هدر (`originCountBadge`) هنگام جستجو (مثلاً `2 of 5`).

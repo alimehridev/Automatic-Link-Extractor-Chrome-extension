@@ -124,20 +124,31 @@ chrome.storage.local.get(["origins", "links"], (result) => {
     const rawOrigins = result["origins"] || [];
     const links = result["links"] || {};
     const reversedOrigins = rawOrigins.slice().reverse();
+    const per_page = 7;
 
     const searchInput = document.getElementById("searchOriginsInput");
     const originCountBadge = document.getElementById("originCountBadge");
+    const paginationDiv = document.getElementById("originPagination");
 
-    function renderList(query = "") {
+    function renderList(targetPage = 1, query = "") {
         dataDiv.innerHTML = "";
+        if (paginationDiv) paginationDiv.innerHTML = "";
+
         const cleanQuery = (query || "").trim().toLowerCase();
         const filtered = cleanQuery 
             ? reversedOrigins.filter(o => o.toLowerCase().includes(cleanQuery))
             : reversedOrigins;
 
+        const len = filtered.length;
+        const page_count = Math.ceil(len / per_page);
+
+        let current_page = parseInt(targetPage, 10);
+        if (isNaN(current_page) || current_page < 1) current_page = 1;
+        if (page_count > 0 && current_page > page_count) current_page = page_count;
+
         if (originCountBadge) {
             if (cleanQuery) {
-                originCountBadge.textContent = `${filtered.length} of ${rawOrigins.length}`;
+                originCountBadge.textContent = `${len} of ${rawOrigins.length}`;
             } else {
                 originCountBadge.textContent = rawOrigins.length === 1 ? "1 origin" : `${rawOrigins.length} origins`;
             }
@@ -155,7 +166,7 @@ chrome.storage.local.get(["origins", "links"], (result) => {
             return;
         }
 
-        if (filtered.length === 0) {
+        if (len === 0) {
             const emptyDiv = document.createElement("div");
             emptyDiv.className = "empty-origins";
             emptyDiv.style.textAlign = "center";
@@ -167,7 +178,11 @@ chrome.storage.local.get(["origins", "links"], (result) => {
             return;
         }
 
-        filtered.forEach((item) => { 
+        const start = (current_page - 1) * per_page;
+        const end = start + per_page;
+        const pageItems = filtered.slice(start, end);
+
+        pageItems.forEach((item) => { 
             const pageDiv = document.createElement("div");
             pageDiv.className = "page";
 
@@ -203,13 +218,65 @@ chrome.storage.local.get(["origins", "links"], (result) => {
 
             dataDiv.appendChild(pageDiv);
         });
+
+        if (paginationDiv && page_count > 1) {
+            function navigateToOriginPage(p) {
+                const activeQuery = searchInput ? searchInput.value : "";
+                renderList(p, activeQuery);
+            }
+
+            const page_range = [
+                current_page - 2 <= 0 ? null : current_page - 2,
+                current_page - 1 <= 0 ? null : current_page - 1,
+                current_page,
+                current_page + 1 > page_count ? null : current_page + 1,
+                current_page + 2 > page_count ? null : current_page + 2
+            ];
+
+            page_range.forEach((page) => {
+                if (page != null) {
+                    const page_button = document.createElement("div");
+                    page_button.className = "page-button";
+                    if (page === current_page) {
+                        page_button.classList.add("page-button-active");
+                    }
+                    page_button.innerText = page;
+                    paginationDiv.appendChild(page_button);
+                    page_button.addEventListener("click", () => {
+                        navigateToOriginPage(page);
+                    });
+                }
+            });
+
+            if (!page_range.includes(1) && !page_range.includes("1")) {
+                const page_button = document.createElement("div");
+                page_button.className = "page-button";
+                page_button.innerText = "1";
+                paginationDiv.insertBefore(document.createTextNode("..."), paginationDiv.firstChild);
+                paginationDiv.insertBefore(page_button, paginationDiv.firstChild);
+                page_button.addEventListener("click", () => {
+                    navigateToOriginPage(1);
+                });
+            }
+
+            if (!page_range.includes(page_count) && !page_range.includes(page_count.toString())) {
+                const page_button = document.createElement("div");
+                page_button.className = "page-button";
+                page_button.innerText = page_count;
+                paginationDiv.appendChild(document.createTextNode("..."));
+                paginationDiv.appendChild(page_button);
+                page_button.addEventListener("click", () => {
+                    navigateToOriginPage(page_count);
+                });
+            }
+        }
     }
 
-    renderList(searchInput ? searchInput.value : "");
+    renderList(1, searchInput ? searchInput.value : "");
 
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
-            renderList(e.target.value);
+            renderList(1, e.target.value);
         });
     }
 });

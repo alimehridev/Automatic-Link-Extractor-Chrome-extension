@@ -121,7 +121,7 @@ async function loadOriginData(origin) {
         });
       }
 
-      let pagination_div = document.getElementsByClassName("pagination")[0];
+      let pagination_div = document.querySelector(".origin_dashboard .pagination");
       if (!pagination_div) return;
       pagination_div.innerHTML = "";
 
