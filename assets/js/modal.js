@@ -74,14 +74,38 @@ function renderJsFileList(links) {
     }
     let div = document.createElement("div");
     div.className = "js-file-item";
-    div.innerHTML = `
-      <label class="js-file-label">
-        <input type="checkbox" class="js-file-chbox" data-index="${index}" checked>
-        <span class="js-file-name" title="${link}">${short_name}</span>
-      </label>
-      <span class="js-status-code"></span>
-      <a href="${link}" target="_blank" class="js-file-open-btn">open</a>
-    `;
+
+    let label = document.createElement("label");
+    label.className = "js-file-label";
+
+    let chbox = document.createElement("input");
+    chbox.type = "checkbox";
+    chbox.className = "js-file-chbox";
+    chbox.setAttribute("data-index", String(index));
+    chbox.checked = true;
+
+    let spanName = document.createElement("span");
+    spanName.className = "js-file-name";
+    spanName.setAttribute("title", link);
+    spanName.textContent = short_name;
+
+    label.appendChild(chbox);
+    label.appendChild(spanName);
+
+    let statusCode = document.createElement("span");
+    statusCode.className = "js-status-code";
+
+    let openBtn = document.createElement("a");
+    openBtn.href = link;
+    openBtn.target = "_blank";
+    openBtn.rel = "noopener noreferrer";
+    openBtn.className = "js-file-open-btn";
+    openBtn.textContent = "open";
+
+    div.appendChild(label);
+    div.appendChild(statusCode);
+    div.appendChild(openBtn);
+
     container.appendChild(div);
   });
   document.getElementById("jsFileCount").innerText = `${links.length} javascript files`;
@@ -133,7 +157,7 @@ document.getElementById("get_js_links").addEventListener("click", () => {
       let regex_value_span = document.createElement("span")
       regex_value_span.setAttribute("contenteditable", "true")
       regex_value_span.classList.add("regex-value")
-      regex_value_span.innerHTML = re
+      regex_value_span.textContent = re
       custom_regex.appendChild(regex_value_span)
       
       regex_value_span.addEventListener("keyup", (ev) => {
@@ -142,7 +166,7 @@ document.getElementById("get_js_links").addEventListener("click", () => {
       
       custom_regex.appendChild(document.createTextNode(" /g "))
       let remove_regex_span = document.createElement("span")
-      remove_regex_span.innerHTML = "-"
+      remove_regex_span.textContent = "-"
       remove_regex_span.classList.add("regex-remove-btn")
       custom_regex.appendChild(remove_regex_span)
       remove_regex_span.addEventListener("click", () => {
@@ -163,7 +187,7 @@ document.getElementById("get_js_links").addEventListener("click", () => {
       regex_value_span = document.createElement("span")
       regex_value_span.setAttribute("contenteditable", "true")
       regex_value_span.classList.add("regex-value")
-      regex_value_span.innerHTML = re
+      regex_value_span.textContent = re
       custom_regex.appendChild(regex_value_span)
 
       regex_value_span.addEventListener("keyup", (ev) => {
@@ -172,7 +196,7 @@ document.getElementById("get_js_links").addEventListener("click", () => {
 
       custom_regex.appendChild(document.createTextNode(" /g "))
       remove_regex_span = document.createElement("span")
-      remove_regex_span.innerHTML = "-"
+      remove_regex_span.textContent = "-"
       remove_regex_span.classList.add("regex-remove-btn")
       custom_regex.appendChild(remove_regex_span)
       remove_regex_span.addEventListener("click", () => {
@@ -290,7 +314,7 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       }
       output.value = output_links.join("\n")
       document.getElementsByClassName("links-number")[0].innerText = `${output_links.length} links`
-      document.getElementById("current_file").innerHTML = "Current file: " + link
+      document.getElementById("current_file").textContent = "Current file: " + link
       let progress = parseInt(progression.getAttribute("value"))
       progression.setAttribute("value", progress + 1)
       numeric_progression.innerText = `${progress + 1}/${scripts_number}`
@@ -298,11 +322,11 @@ document.getElementById("crawlBtn").addEventListener("click", () => {
       if (progress + 1 === scripts_number) {
         crawlBtn.innerText = "Crawl"
         crawlBtn.disabled = false
-        document.getElementById("current_file").innerHTML = ""
+        document.getElementById("current_file").textContent = ""
       }
 
     }).catch(e => {
-      document.getElementById("current_file").innerHTML = "Current file: " + link
+      document.getElementById("current_file").textContent = "Current file: " + link
       let progress = parseInt(progression.getAttribute("value"))
       progression.setAttribute("value", progress + 1)
       numeric_progression.innerText = `${progress + 1}/${scripts_number}`
@@ -357,7 +381,7 @@ document.getElementsByClassName("add-regex-include")[0].addEventListener("click"
   let regex_value_span = document.createElement("span")
   regex_value_span.setAttribute("contenteditable", "true")
   regex_value_span.classList.add("regex-value")
-  regex_value_span.innerHTML = "YOUR_REGEX"
+  regex_value_span.textContent = "YOUR_REGEX"
   custom_regex.appendChild(regex_value_span)
 
   regex_value_span.addEventListener("keyup", (ev) => {
@@ -366,7 +390,7 @@ document.getElementsByClassName("add-regex-include")[0].addEventListener("click"
   
   custom_regex.appendChild(document.createTextNode(" /g "))
   let remove_regex_span = document.createElement("span")
-  remove_regex_span.innerHTML = "-"
+  remove_regex_span.textContent = "-"
   remove_regex_span.classList.add("regex-remove-btn")
   custom_regex.appendChild(remove_regex_span)
   remove_regex_span.addEventListener("click", () => {
@@ -390,7 +414,7 @@ document.getElementsByClassName("add-regex-exclude")[0].addEventListener("click"
   let regex_value_span = document.createElement("span")
   regex_value_span.setAttribute("contenteditable", "true")
   regex_value_span.classList.add("regex-value")
-  regex_value_span.innerHTML = "YOUR_REGEX"
+  regex_value_span.textContent = "YOUR_REGEX"
   custom_regex.appendChild(regex_value_span)
   
   regex_value_span.addEventListener("keyup", (ev) => {
@@ -399,7 +423,7 @@ document.getElementsByClassName("add-regex-exclude")[0].addEventListener("click"
 
   custom_regex.appendChild(document.createTextNode(" /g "))
   let remove_regex_span = document.createElement("span")
-  remove_regex_span.innerHTML = "-"
+  remove_regex_span.textContent = "-"
   remove_regex_span.classList.add("regex-remove-btn")
   custom_regex.appendChild(remove_regex_span)
   remove_regex_span.addEventListener("click", () => {

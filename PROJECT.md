@@ -375,8 +375,7 @@ Known issues).
   `links.filter(l => l.includes(".js") && l.startsWith("http"))`.
   → Because extracted links are now absolute, relative JS chunks (e.g. `./chunk-1.js`)
   appear here as absolute URLs and can be crawled on a later run.
-- `renderJsFileList` renders checkboxes (with truncated labels + `title` attribute) and an
-  "open" link; also seeds one example include/exclude regex row (`YOUR_REGEX`).
+- `renderJsFileList` safely constructs DOM elements (`createElement`, `setAttribute`, `textContent`, `rel="noopener noreferrer"`) for checkboxes (with truncated labels + `title` attribute) and an "open" link; also seeds one example include/exclude regex row (`YOUR_REGEX`).
 - `getCheckedLinks` / `updateSelectToggleText` / `#selectAllNoneBtn` manage selection.
 - `#crawlBtn`:
   - `fetch(link, { method: "GET", headers: { "Content-Type": "text/plain" } })`
@@ -489,9 +488,8 @@ These are real defects or sharp edges; some are intentional, some are bugs:
    still contain relative entries.
 5. **User include/exclude regexes can throw (FIXED in `modal.js` and `subdomains.js`).** `new RegExp(pattern, "i").test(...)`
    is safely wrapped inside `try/catch` returning `false` on `SyntaxError`, preventing crawl cancellation or UI crashes on invalid/incomplete patterns.
-6. **`modal.js` builds HTML with `div.innerHTML` interpolating `link`** into attributes
-   (`title="${link}"`, `href="${link}"`). A crafted URL containing quotes could inject
-   markup. Prefer `textContent` / `setAttribute`.
+6. **`modal.js` HTML interpolation (FIXED).** Replaced `div.innerHTML` template string
+   interpolation in `renderJsFileList` with safe DOM element creation (`document.createElement`, `setAttribute`, `textContent`, `rel="noopener noreferrer"`). Also sanitized dynamic `textContent` assignments for `current_file` and regex values.
 7. **`worker.onmessage` posts `window.postMessage({action:"continue"})`** to the page, but
    nothing consumes it. Dead code.
 8. **`scripting` permission is declared but unused.**
@@ -629,3 +627,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **Network Resource Timing Link Extraction:** Added passive real-time resource timing monitoring in `content.js` via `PerformanceObserver` and `performance.getEntriesByType("resource")`, capturing background AJAX/fetch requests, beacons, and dynamically loaded network assets.
 - **Search with Pagination & Filtered Copy:** Added a live search input (`#searchLinksInput`) below the extracted links header with real-time substring filtering, dynamic in-place pagination, seamless URL synchronization (`page` and `q`), and updated `#copy_all` to strictly copy search-filtered results when an active search query is present.
 - **JS Crawler Regex Safety:** Wrapped Include and Exclude `new RegExp` evaluations in `assets/js/modal.js` in defensive `try/catch` blocks, preventing `SyntaxError` from rejecting fetch promises and breaking extraction when users type incomplete/invalid regex patterns. Also introduced `getRegexList` helper and safe storage sync upon regex pill removal.
+- **JS File List DOM Safety & XSS Prevention:** Replaced raw `div.innerHTML` interpolation in `renderJsFileList` (`assets/js/modal.js`) with safe DOM element instantiation (`createElement`, `setAttribute`, `textContent`, `rel="noopener noreferrer"`). Ensured `current_file` and regex values are set via `textContent` rather than `innerHTML`.
