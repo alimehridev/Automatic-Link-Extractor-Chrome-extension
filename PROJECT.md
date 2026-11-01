@@ -342,7 +342,7 @@ Known issues).
 - Add button: builds a row, writes to `origins`, initializes `sensitivities` (defaults all flags to 1),
   `regexes` (`{includes: [], excludes: []}`), and `links` (`[]`) for the new origin, and immediately
   redirects the window to `?origin=<value>` (commit `4c681b0`).
-- On load: renders the origin list (reversed) into `#data` with per-origin link count badges, updates `#originCountBadge`, and renders a clean empty state if no targets are present.
+- On load: renders the origin list (reversed) into `#data` with per-origin link count badges, updates `#originCountBadge`, supports live filtering via `#searchOriginsInput`, and renders a clean empty state if no targets are present.
 - Note: uses `dataDiv` which is declared *after* the add handler with `const`
   (`const dataDiv = document.getElementById("data")`) — works because the handler runs
   later, but be careful if reordering.
@@ -632,3 +632,4 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **Unused Permission Removal (`manifest.json`):** Removed unused `"scripting"` permission from `manifest.json`, adhering to least-privilege standards and eliminating unnecessary extension install warnings.
 - **Confirmed Origin & Storage Cascade Deletion (`addorigin.js`):** Added user confirmation (`confirm()`) when clicking `.removeLogBtn` on target origin rows, and ensured complete cascading deletion of all associated keys across `origins`, `sensitivities`, `regexes`, `extraction_rules`, and `links` including trailing slash and encoding variations.
 - **Origin Dashboard UI Enhancements:** Added per-origin link count badges beside `.removeLogBtn`, total origin count badge next to `🔍 Origin List`, refined `originInput` placeholder with an informative note below highlighting wildcard examples, empty state messaging, and improved CSS responsive layout for long origin URLs.
+- **Live Search for Origins:** Added `#searchOriginsInput` beneath `.origin-header` in `dashboard.html` handled dynamically in `addorigin.js` with instant substring filtering, live counter updates (`X of Y`), and empty result handling.

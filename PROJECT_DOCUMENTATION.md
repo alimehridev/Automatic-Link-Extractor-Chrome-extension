@@ -263,9 +263,9 @@ flowchart TD
   - دکمه قرمز و جمع‌وجور **Remove All** (`#removeAllBtn`) به همراه دکمه سبز `+` (`#openAddLinksModalBtn`) در کنار هدر `🔍 Extracted Links` قرار گرفته‌اند.
   - پیوند کلیک‌پذیر راست‌چین **Copy all to clipboard** (`#copy_all`) بلافاصله در زیر فهرست لینک‌ها قرار داده شده است.
   - دکمه‌های اصلی ابزارها شامل **Extract links from JS files**، **Extract subdomains** و دکمه جدید **Settings** (`#open_settings` با آیکون چرخ‌دنده) در کانتینر پایینی (`.buttons_container`) قرار دارند.
-  - بهبود ساختار هدر بخش مبدأها با نشانگر تعداد کل Originها (`#originCountBadge`) و یادداشت راهنمای وایلدکاردها در زیر کادر ورودی.
+  - بهبود ساختار هدر بخش مبدأها با نشانگر تعداد کل Originها (`#originCountBadge`)، فیلد جستجوی زنده مبدأها (`#searchOriginsInput`) و یادداشت راهنمای وایلدکاردها.
 - پنجره‌های مودال اختصاصی: مودال خزشگر جاوااسکریپت (`#myModal`)، مودال ساب‌دامنه‌ها (`#subdomainModal`)، مودال ورود دستی لینک‌ها (`#addLinksModal`) و مودال تنظیمات استخراج (`#settingsModal`).
-- فیلد جستجوی بلادرنگ `#searchLinksInput`.
+- فیلدهای جستجوی بلادرنگ `#searchLinksInput` و `#searchOriginsInput`.
 - لود اسکریپت‌های ماژولار: `pattern_matcher.js`، `dashboard.js`، `sensitivities.js`، `modal.js`، `subdomains.js`، `custom_links.js` و `settings.js`.
 
 ### `assets/styles/style.css` و `assets/styles/modal.css`
@@ -276,7 +276,12 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **بهبود بصری بخش Originها و افزودن نشانگرهای آماری (`dashboard.html`, `addorigin.js`, `style.css`):**
+1. **افزودن امکان جستجوی بلادرنگ در فهرست Originها (`dashboard.html` و `addorigin.js`):**
+   - افزودن فیلد ورودی `#searchOriginsInput` بلافاصله در زیر هدر `.origin-header`.
+   - فیلتر کردن زنده و بلادرنگ کارت‌های مبدأ بر اساس متن وارد شده بدون رفرش صفحه.
+   - تطبیق خودکار نشانگر تعداد در هدر (`originCountBadge`) هنگام جستجو (مثلاً `2 of 5`).
+   - نمایش پیام راهنما در زمان عدم یافتن هیچ نتیجه‌ای برای عبارت جستجوشده.
+2. **بهبود بصری بخش Originها و افزودن نشانگرهای آماری (`daed22a`):**
    - نمایش نشان تعداد لینک‌های کشف‌شده برای هر مبدأ (`origin-link-count`) در کنار دکمه حذف `.removeLogBtn`.
    - نمایش شمارنده کل Originهای ثبت‌شده در هدر (`originCountBadge` در کنار `🔍 Origin List`).
    - تبدیل توضیحات طولانی placeholder ورودی مبدأ به یک یادداشت راهنما (`origin-input-note`) در زیر اینپوت با پشتیبانی از کدهای نمونه الگوهای وایلدکارد.
