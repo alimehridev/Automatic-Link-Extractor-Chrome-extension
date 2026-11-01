@@ -382,3 +382,74 @@ input:checked+.slider:before {
   text-align: center;
   align-items: center;
 }
+
+.origin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 15px;
+  margin-bottom: 12px;
+}
+
+.origin-header h1 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.origin-count-badge {
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #e4e7eb;
+  color: #495057;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid #d0d5dd;
+}
+
+.origin-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.origin-link-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475467;
+  background-color: #f2f4f7;
+  border: 1px solid #eaecf0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.origin-input-note {
+  font-size: 11px;
+  margin-top: -3px;
+  color: #667085;
+  padding: 0 2px;
+}
+
+.origin-input-note code {
+  background-color: #eff4ff;
+  color: #155eef;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.page .keyword {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page .keyword a {
+  text-decoration: none;
+}
+
+.page .keyword a:hover {
+  text-decoration: underline;
+}

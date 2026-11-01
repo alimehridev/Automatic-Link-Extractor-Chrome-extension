@@ -120,13 +120,32 @@ input.addEventListener("keydown", (e) => {
 });
 
 dataDiv.innerHTML = "";
-chrome.storage.local.get("origins", (result) => {
-    if (!result["origins"] || result["origins"].length === 0) return;
-    let origins = result['origins'] || [];
-    origins = origins.slice().reverse();
-    origins.forEach((item) => { 
+chrome.storage.local.get(["origins", "links"], (result) => {
+    const origins = result["origins"] || [];
+    const links = result["links"] || {};
+
+    const originCountBadge = document.getElementById("originCountBadge");
+    if (originCountBadge) {
+        originCountBadge.textContent = origins.length === 1 ? "1 origin" : `${origins.length} origins`;
+    }
+
+    if (origins.length === 0) {
+        const emptyDiv = document.createElement("div");
+        emptyDiv.className = "empty-origins";
+        emptyDiv.style.textAlign = "center";
+        emptyDiv.style.color = "#888";
+        emptyDiv.style.fontSize = "13px";
+        emptyDiv.style.padding = "25px 0";
+        emptyDiv.textContent = "No origins added yet. Add an origin or pattern above to start extracting links.";
+        dataDiv.appendChild(emptyDiv);
+        return;
+    }
+
+    const reversedOrigins = origins.slice().reverse();
+    reversedOrigins.forEach((item) => { 
         const pageDiv = document.createElement("div");
         pageDiv.className = "page";
+
         const kw = document.createElement("div");
         kw.className = "keyword";
         const a = document.createElement("a");
@@ -136,6 +155,14 @@ chrome.storage.local.get("origins", (result) => {
         kw.appendChild(a);
         pageDiv.appendChild(kw);
 
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "origin-actions";
+
+        const originLinks = links[item] || [];
+        const countSpan = document.createElement("span");
+        countSpan.className = "origin-link-count";
+        countSpan.textContent = originLinks.length === 1 ? "1 link" : `${originLinks.length} links`;
+
         let remove_btn = document.createElement("span");
         remove_btn.classList.add("removeLogBtn");
         remove_btn.title = "Delete origin and all its data";
@@ -144,7 +171,10 @@ chrome.storage.local.get("origins", (result) => {
             remove_origin_from_list(item);
         });
         remove_btn.innerText = "x";
-        pageDiv.appendChild(remove_btn);
+
+        actionsDiv.appendChild(countSpan);
+        actionsDiv.appendChild(remove_btn);
+        pageDiv.appendChild(actionsDiv);
 
         dataDiv.appendChild(pageDiv);
     });

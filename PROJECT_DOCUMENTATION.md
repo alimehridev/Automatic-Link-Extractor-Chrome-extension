@@ -263,6 +263,7 @@ flowchart TD
   - دکمه قرمز و جمع‌وجور **Remove All** (`#removeAllBtn`) به همراه دکمه سبز `+` (`#openAddLinksModalBtn`) در کنار هدر `🔍 Extracted Links` قرار گرفته‌اند.
   - پیوند کلیک‌پذیر راست‌چین **Copy all to clipboard** (`#copy_all`) بلافاصله در زیر فهرست لینک‌ها قرار داده شده است.
   - دکمه‌های اصلی ابزارها شامل **Extract links from JS files**، **Extract subdomains** و دکمه جدید **Settings** (`#open_settings` با آیکون چرخ‌دنده) در کانتینر پایینی (`.buttons_container`) قرار دارند.
+  - بهبود ساختار هدر بخش مبدأها با نشانگر تعداد کل Originها (`#originCountBadge`) و یادداشت راهنمای وایلدکاردها در زیر کادر ورودی.
 - پنجره‌های مودال اختصاصی: مودال خزشگر جاوااسکریپت (`#myModal`)، مودال ساب‌دامنه‌ها (`#subdomainModal`)، مودال ورود دستی لینک‌ها (`#addLinksModal`) و مودال تنظیمات استخراج (`#settingsModal`).
 - فیلد جستجوی بلادرنگ `#searchLinksInput`.
 - لود اسکریپت‌های ماژولار: `pattern_matcher.js`، `dashboard.js`، `sensitivities.js`، `modal.js`، `subdomains.js`، `custom_links.js` و `settings.js`.
@@ -275,7 +276,13 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **افزودن دیالوگ تأیید (Confirm) و پاک‌سازی کامل داده‌ها در حذف Origin (`addorigin.js`):**
+1. **بهبود بصری بخش Originها و افزودن نشانگرهای آماری (`dashboard.html`, `addorigin.js`, `style.css`):**
+   - نمایش نشان تعداد لینک‌های کشف‌شده برای هر مبدأ (`origin-link-count`) در کنار دکمه حذف `.removeLogBtn`.
+   - نمایش شمارنده کل Originهای ثبت‌شده در هدر (`originCountBadge` در کنار `🔍 Origin List`).
+   - تبدیل توضیحات طولانی placeholder ورودی مبدأ به یک یادداشت راهنما (`origin-input-note`) در زیر اینپوت با پشتیبانی از کدهای نمونه الگوهای وایلدکارد.
+   - اضافه شدن حالت پیش‌نمایش خالی (Empty state) برای زمانی که هنوز هیچ مبدأیی ثبت نشده است.
+   - بهینه‌سازی استایل‌های CSS و محدودسازی عرض لینک مبدأ جهت جلوگیری از به‌هم‌ریختگی چیدمان در نام‌های طولانی.
+2. **افزودن دیالوگ تأیید (Confirm) و پاک‌سازی کامل داده‌ها در حذف Origin (`2522d28`):**
    - نمایش پیام تأیید `confirm()` پیش از اقدام به حذف Origin در دکمه‌های `.removeLogBtn` جهت پیشگیری از حذف تصادفی.
    - حذف همه‌جانبه تمام داده‌های ذخیره‌شده مرتبط با مبدأ/الگو از استوریج (`links`، `regexes`، `extraction_rules`، `sensitivities`) به همراه پوشش کلیه واریانت‌های ممکن (با و بدون اسلش پایانی، کدگذاری URL و trim).
    - توقف انتشار رویداد با `stopPropagation` و هدایت صحیح کاربر به ریشه داشبورد در صورت باز بودن تب تارگت حذف‌شده.

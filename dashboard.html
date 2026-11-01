@@ -106,12 +106,19 @@
   </head>
   <body>
     <div class="main_dashboard">
-      <div class="input-group">
-        <input type="text" id="originInput" placeholder="Enter origin or pattern (e.g. https://*.google.com, https://google.com/*)..." />
+      <div class="input-group" style="margin-bottom: 16px;">
+        <input type="text" id="originInput" placeholder="Enter origin or pattern..." />
+        
+        <div class="origin-input-note">
+          <strong>Note:</strong> Supports wildcard patterns e.g. <code>https://*.google.com</code>, <code>https://google.com/*</code>
+        </div>
         <button id="addOriginBtn">Add</button>
       </div>
 
-      <h1>🔍 Origin List</h1>
+      <div class="origin-header">
+        <h1>🔍 Origin List</h1>
+        <span id="originCountBadge" class="origin-count-badge">0 origins</span>
+      </div>
       <ul id="originList"></ul>
       <div id="added_origin"></div>
       <div id="data"></div>
