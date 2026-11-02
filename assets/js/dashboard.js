@@ -233,3 +233,13 @@ document.getElementById("all").addEventListener("click", () => {
 document.getElementsByClassName("backBtn")[0].addEventListener("click", () => {
   location.href = location.origin + location.pathname;
 });
+
+const openAutoCrawlBtn = document.getElementById("openAutoCrawlBtn");
+if (openAutoCrawlBtn) {
+  openAutoCrawlBtn.addEventListener("click", () => {
+    const origin = getQueryParam("origin");
+    if (origin) {
+      window.location.href = `crawler.html?origin=${encodeURIComponent(origin)}`;
+    }
+  });
+}

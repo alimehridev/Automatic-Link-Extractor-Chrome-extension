@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto Crawler Dashboard — Automatic Link Extractor</title>
+    <link rel="stylesheet" href="assets/styles/style.css" />
+    <link rel="stylesheet" href="assets/styles/crawler.css" />
+  </head>
+  <body class="crawler-body">
+    <!-- Header -->
+    <header class="crawler-header">
+      <div class="crawler-header-left">
+        <button id="backToDashBtn" class="crawler-back-btn" title="Back to Target Dashboard">
+          ← Back
+        </button>
+        <div class="crawler-title-group">
+          <h1>
+            <img src="assets/images/crawler.svg" alt="Spider" style="width: 22px; height: 22px; filter: brightness(0);" />
+            Auto Crawler
+          </h1>
+        </div>
+        <div class="target-badge" id="targetBadge">
+          Target: <span id="targetOriginDisplay">Loading...</span>
+        </div>
+      </div>
+      <div>
+        <span id="crawlerStatusBadge" class="status-badge status-idle">Idle</span>
+      </div>
+    </header>
+
+    <!-- Progress & Live Status Card -->
+    <section class="crawler-card">
+      <div class="crawler-card-title">
+        <span>📊 Live Crawl Progress</span>
+        <span id="progressPercent" class="progress-percent">0%</span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <div id="progressBar" class="progress-bar-fill"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="progressSummary">0 of 0 links crawled</span>
+        <span id="depthIndicator">Depth: 1</span>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div id="crawledCount" class="stat-value">0</div>
+          <div class="stat-label">Crawled Pages</div>
+        </div>
+        <div class="stat-box">
+          <div id="remainingCount" class="stat-value">0</div>
+          <div class="stat-label">Queue / Remaining</div>
+        </div>
+        <div class="stat-box">
+          <div id="totalCount" class="stat-value">0</div>
+          <div class="stat-label">Total Discovered</div>
+        </div>
+      </div>
+
+      <!-- Currently Crawling Link -->
+      <div class="current-link-box">
+        <span class="current-link-label">Crawling Now:</span>
+        <span id="currentLinkText" class="current-link-url" title="Waiting to start...">Waiting to start...</span>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="crawler-controls">
+        <button id="startCrawlerBtn" class="ctrl-btn btn-start">
+          <span style="font-size: 15px;">▶</span> Start Auto Crawl
+        </button>
+        <button id="pauseCrawlerBtn" class="ctrl-btn btn-pause" style="display: none;">
+          <span style="font-size: 15px;">⏸</span> Pause
+        </button>
+        <button id="resumeCrawlerBtn" class="ctrl-btn btn-resume" style="display: none;">
+          <span style="font-size: 15px;">⏯</span> Resume
+        </button>
+        <button id="stopCrawlerBtn" class="ctrl-btn btn-stop" disabled>
+          <span style="font-size: 15px;">⏹</span> Stop
+        </button>
+        <button id="resetCrawlerBtn" class="ctrl-btn btn-reset" title="Reset queue and visited set back to root target">
+          ↺ Reset Queue
+        </button>
+      </div>
+    </section>
+
+    <!-- Crawler Settings Card -->
+    <section class="crawler-card">
+      <div class="crawler-card-title">
+        <span>⚙️ Crawler Settings & Rate Limiting</span>
+        <span id="settingsSavedIndicator" class="settings-saved-indicator">Saved ✓</span>
+      </div>
+
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label for="crawlerDelay" class="setting-label">
+            <span>Delay Between Requests</span>
+            <span id="crawlerDelayValue">1.5s</span>
+          </label>
+          <input type="number" id="crawlerDelay" class="setting-input" min="0.5" max="30" step="0.5" value="1.5" />
+          <span class="setting-desc">Seconds to pause between fetching each page (rate limiting).</span>
+        </div>
+
+        <div class="setting-item">
+          <label for="crawlerMaxDepth" class="setting-label">
+            <span>Max Link Depth</span>
+            <span id="crawlerMaxDepthValue">3</span>
+          </label>
+          <input type="number" id="crawlerMaxDepth" class="setting-input" min="1" max="10" step="1" value="3" />
+          <span class="setting-desc">Max link-hop levels from the initial target root URL.</span>
+        </div>
+
+        <div class="setting-item">
+          <label for="crawlerMaxPages" class="setting-label">
+            <span>Max Total Pages</span>
+            <span id="crawlerMaxPagesValue">200</span>
+          </label>
+          <input type="number" id="crawlerMaxPages" class="setting-input" min="5" max="5000" step="10" value="200" />
+          <span class="setting-desc">Maximum number of unique pages to crawl before stopping.</span>
+        </div>
+      </div>
+
+      <label class="setting-checkbox-label">
+        <input type="checkbox" id="crawlerStayInScope" checked />
+        <span>Strictly stay inside target domain / wildcard pattern (Recommended)</span>
+      </label>
+
+      <div class="settings-note">
+        💡 <strong>Dynamic Application:</strong> Any changes made to these settings are automatically saved and applied immediately to the next link in the crawl queue.
+      </div>
+    </section>
+
+    <!-- Activity & Discovery Logs Card -->
+    <section class="crawler-card">
+      <div class="crawler-card-title">
+        <span>📋 Real-time Crawl Activity</span>
+        <button id="clearLogsBtn" class="crawler-back-btn" style="padding: 3px 8px; font-size: 11px;">
+          Clear Logs
+        </button>
+      </div>
+
+      <div id="logsContainer" class="logs-container">
+        <div id="emptyLogsMsg" class="logs-empty">
+          No crawling activity yet. Click "Start Auto Crawl" to begin.
+        </div>
+      </div>
+    </section>
+
+    <!-- Scripts -->
+    <script src="assets/js/pattern_matcher.js"></script>
+    <script src="assets/js/crawler.js"></script>
+  </body>
+</html>
+

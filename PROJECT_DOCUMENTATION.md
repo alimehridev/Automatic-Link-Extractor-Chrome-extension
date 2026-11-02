@@ -269,6 +269,19 @@ flowchart TD
 - دکمه اختصاصی **Auto Crawl** (`#openAutoCrawlBtn`, `.auto-crawl-btn`) با آیکون وکتور عنکبوت/خزشگر (`assets/images/crawler.svg`) مستقیماً زیر بخش تنظیمات Sensitivity (`div.input-group`) در `origin_dashboard` جهت باز کردن پنل خزش خودکار صفحات تارگت جاری.
 - لود اسکریپت‌های ماژولار: `pattern_matcher.js`، `dashboard.js`، `sensitivities.js`، `modal.js`، `subdomains.js`، `custom_links.js` و `settings.js`.
 
+### `crawler.html` و `assets/js/crawler.js`
+- داشبورد اختصاصی و پیشرفته خزش خودکار (Auto Crawler):
+  - شناسایی خودکار تارگت مبدأ از پارامتر `origin` و اتصال به داده‌های همان تارگت.
+  - مدیریت چرخه حیات شیء `crawler_state` در `chrome.storage.local` (بارگذاری وضعیت قبلی یا ایجاد صف اولیه بر اساس ریشه تارگت و لینک‌های استخراج‌شده قبلی).
+  - نوار پیشرفت زنده (`.progress-bar-fill`) و نمایش درصد پیشرفت عددی (`0%` تا `100%`).
+  - کارت‌های آماری سه‌گانه: صفحات کرال‌شده (`#crawledCount`)، تعداد لینک‌های در صف/باقی‌مانده (`#remainingCount`) و کل لینک‌های کشف‌شده (`#totalCount`).
+  - کادر نمایش بلادرنگ آدرس در حال کرال (`#currentLinkText`).
+  - کنترل کامل فرآیند با دکمه‌های کنترلی چهارگانه: Start (`#startCrawlerBtn`)، Pause (`#pauseCrawlerBtn`)، Resume (`#resumeCrawlerBtn`) و Stop (`#stopCrawlerBtn`) به همراه ریست صف (`#resetCrawlerBtn`).
+  - فرم تنظیمات خزشگر: تاخیر زمانی (Delay)، سقف عمق (Max Depth)، سقف کل صفحات (Max Pages) و چک‌باکس رعایت محدوده تارگت (Stay in Scope).
+  - اعمال داینامیک و بلادرنگ تنظیمات: موتور خزشگر قبل از شروع کرال هر لینک، آخرین تنظیمات را مستقیماً از استوریج بازخوانی می‌کند؛ بنابراین هرگونه تغییر کاربر حین خزش سریعاً روی ادامه فرآیند اعمال می‌شود.
+  - استخراج خودکار لینک‌های جدید، تطبیق با قوانین Include/Exclude تارگت، فیلتر پسوندهای فایل‌های مدیا و ذخیره آنی لینک‌های کشف‌شده در دیتابیس اصلی تارگت (`links[origin]`).
+  - جعبه لاگ‌های زنده فعالیت خزشگر با زمان دقیق، وضعیت موفقیت و تعداد لینک‌های کشف‌شده.
+
 ### `assets/styles/style.css` و `assets/styles/modal.css`
 - استایل‌دهی بنفش به دکمه `#extract_subdomains` و اعمال استایل دکمه‌های کپی و کادر textarea مودال.
 - استایل دکمه سبز رنگ `+` (`#openAddLinksModalBtn`) و کادر ورودی سفید رنگ لینک‌های دستی (`#customLinksInput`).
@@ -278,7 +291,15 @@ flowchart TD
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **طراحی آیکون و دکمه پنل Auto Crawl در صفحه هر تارگت (`dashboard.html`, `crawler.svg`, `style.css`):**
+1. **پیاده‌سازی داشبورد اختصاصی Auto Crawler و موتور خزش خودکار (`crawler.html`, `crawler.js`, `crawler.css`, `dashboard.js`):**
+   - اتصال دکمه Auto Crawl در صفحه تارگت به داشبورد اختصاصی خزشگر با انتقال امن پارامتر `origin`.
+   - ایجاد و مدیریت شیء `crawler_state` در `chrome.storage.local` با پشتیبانی کامل از همگام‌سازی بین تب‌ها و ماندگاری وضعیت.
+   - طراحی نوار پیشرفت درصدی، شمارنده‌های عددی (کرال‌شده، در صف و کل) و نمایش زنده لینکی که کرالر در لحظه در حال بررسی آن است.
+   - پیاده‌سازی دکمه‌های کنترل فرآیند شامل Start, Pause, Resume, Stop و Reset Queue.
+   - امکان تنظیم بلادرنگ پارامترهای خزش (Delay, Max Depth, Max Pages, Stay in Scope) با بازخوانی درجا در هر مرحله از حلقه خزش جهت اعمال آنی تغییرات کاربر.
+   - استخراج، نرمال‌سازی URLها و ذخیره‌سازی خودکار لینک‌های مکشوفه در جدول لینک‌های اصلی تارگت.
+
+2. **طراحی آیکون و دکمه پنل Auto Crawl در صفحه هر تارگت (`dashboard.html`, `crawler.svg`, `style.css`):**
    - طراحی آیکون وکتور اختصاصی خزشگر (`crawler.svg`) با طراحی مدرن خزشگر/عنکبوت (مطابق با استایل Lucide/Feather در سایز 16x16 و stroke تمیز).
    - افزودن دکمه `#openAutoCrawlBtn` (`.auto-crawl-btn`) در کانتینر `.auto-crawl-container` مستقیماً زیر تگ `div.input-group` (تنظیمات حساسیت) در `origin_dashboard`.
    - استایل‌دهی متمایز با رنگ نارنجی/کهربایی جذاب (`#ea580c` با هاور `#c2410c` و سایه نئونی)، هماهنگ با ساختار دکمه‌های اصلی داشبورد و دارای آیکون سفید معکوس‌شده.

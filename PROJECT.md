@@ -47,6 +47,7 @@ Automatic Link Extractor - Chrome extension/
 ├── content.js                 # Injected into every page: DOM watching + link extraction
 ├── worker.js                  # Web Worker: normalizes/dedupes URLs sent by content.js
 ├── dashboard.html             # Extension dashboard page (list origins, links, JS crawler modal)
+├── crawler.html               # Auto Crawler dashboard (progress, stats, controls, live logs)
 ├── README.md                  # User-facing readme
 ├── PROJECT_DOCUMENTATION.md   # Comprehensive Persian documentation & knowledge base
 ├── PROJECT.md                 # ← this file
@@ -55,12 +56,14 @@ Automatic Link Extractor - Chrome extension/
     ├── images/                # icon-512.png, radar.png, settings.svg, crawler.svg, screenshot1..3.png
     ├── styles/
     │   ├── style.css          # Dashboard + shared styles
+    │   ├── crawler.css        # Auto Crawler dashboard styles & animations
     │   └── modal.css          # JS-crawler modal styles
     └── js/
         ├── pattern_matcher.js # Wildcard pattern parser and URL matcher
         ├── addorigin.js       # Origin list add/remove UI + storage init
         ├── dash_checker.js    # Decides main vs origin dashboard view from URL
         ├── dashboard.js       # Origin dashboard: sensitivities + links list + pagination
+        ├── crawler.js         # Auto Crawler engine: queue loop, stats, dynamic settings, logs
         ├── sensitivities.js   # Save MutationObserver sensitivity toggles
         ├── modal.js           # JS-file crawler modal (fetch JS, regex-extract links)
         ├── subdomains.js      # eTLD+1 root domain & subdomain extractor modal
@@ -633,5 +636,6 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **Confirmed Origin & Storage Cascade Deletion (`addorigin.js`):** Added user confirmation (`confirm()`) when clicking `.removeLogBtn` on target origin rows, and ensured complete cascading deletion of all associated keys across `origins`, `sensitivities`, `regexes`, `extraction_rules`, and `links` including trailing slash and encoding variations.
 - **Origin Dashboard UI Enhancements:** Added per-origin link count badges beside `.removeLogBtn`, total origin count badge next to `🔍 Origin List`, refined `originInput` placeholder with an informative note below highlighting wildcard examples, empty state messaging, and improved CSS responsive layout for long origin URLs.
 - **Live Search for Origins:** Added `#searchOriginsInput` beneath `.origin-header` in `dashboard.html` handled dynamically in `addorigin.js` with instant substring filtering, live counter updates (`X of Y`), and empty result handling.
+- **Auto Crawler Dashboard & Execution Engine (`crawler.html`, `crawler.js`, `crawler.css`):** Built a dedicated Auto Crawler dashboard opened via the origin dashboard's Auto Crawl button. Initializes/updates `crawler_state` in `chrome.storage.local` keyed to the active target origin. Features real-time percentage progress bar, statistics grid (Crawled, Remaining in Queue, Total Discovered), currently crawling link banner, interactive control buttons (Start, Pause, Resume, Stop, Reset), live configurable settings (Delay, Max Depth, Max Pages, Stay in Scope) dynamically re-read before every link iteration for instant mid-crawl tuning, and real-time activity logging with automated persistence to the target's link database.
 - **Auto Crawl Button & Custom Spider Icon:** Designed a crisp Lucide-style vector spider icon (`assets/images/crawler.svg`) and integrated `#openAutoCrawlBtn` (`.auto-crawl-btn`) wrapped in `.auto-crawl-container` directly below the Sensitivity Configurations `div.input-group` in `origin_dashboard`. Applied a striking deep orange/amber theme (`#ea580c`, hover `#c2410c`, active scale) with an inverted white icon filter, maintaining visual balance with existing dashboard controls.
 - **Origin List Pagination (7 items/page):** Implemented pagination for target origins matching the link pagination design (`.pagination`, `.page-button`, `.page-button-active`), displaying 7 origins per page, synchronized dynamically with real-time origin search.
