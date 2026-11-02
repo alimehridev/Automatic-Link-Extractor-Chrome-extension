@@ -37,7 +37,6 @@
   const crawlerMaxPagesValue = document.getElementById("crawlerMaxPagesValue");
   const crawlerTimeoutInput = document.getElementById("crawlerTimeout");
   const crawlerTimeoutValue = document.getElementById("crawlerTimeoutValue");
-  const crawlerStayInScopeCheckbox = document.getElementById("crawlerStayInScope");
   const crawlerExcludedExtensionsInput = document.getElementById("crawlerExcludedExtensions");
   const crawlerExcludedCount = document.getElementById("crawlerExcludedCount");
   const crawlerExcludedUrlsInput = document.getElementById("crawlerExcludedUrls");
@@ -123,6 +122,50 @@
       }
     }
     return patterns;
+  }
+
+  // Synchronize newly discovered in-scope links from storage into the active queue
+  function syncStoredLinksIntoQueue(state, storedLinks, extSet, blacklistPatterns, defaultDepth = 1) {
+    if (!state || !Array.isArray(storedLinks) || storedLinks.length === 0) return 0;
+    if (!Array.isArray(state.queue)) state.queue = [];
+    if (!Array.isArray(state.visited)) state.visited = [];
+
+    const visitedSet = new Set(state.visited);
+    const queueSet = new Set(state.queue);
+    let addedCount = 0;
+
+    for (const rawLink of storedLinks) {
+      if (typeof rawLink !== "string") continue;
+      const clean = rawLink.split("#")[0].trim();
+      if (!clean || !/^https?:\/\//i.test(clean)) continue;
+
+      // Must be strictly inside target scope
+      if (!isUrlInScope(clean, currentTarget)) continue;
+
+      // Must not be blacklisted
+      if (isUrlBlacklisted(clean, blacklistPatterns)) continue;
+
+      // Must not be a static asset
+      if (isStaticAsset(clean, extSet)) continue;
+
+      if (!visitedSet.has(clean) && !queueSet.has(clean)) {
+        state.queue.push(clean);
+        queueSet.add(clean);
+        state.depthMap = state.depthMap || {};
+        if (!state.depthMap[clean]) {
+          state.depthMap[clean] = defaultDepth;
+        }
+        addedCount++;
+      }
+    }
+
+    if (addedCount > 0) {
+      const total = state.visited.length + state.queue.length;
+      state.totalCount = total;
+      state.percentage = total > 0 ? Math.round((state.visited.length / total) * 100) : 0;
+    }
+
+    return addedCount;
   }
 
   // Custom HTTP Headers Helpers
@@ -343,7 +386,7 @@
     const targetConfig = savedConfigs[currentTarget] || {
       delaySeconds: 1.5,
       maxDepth: 3,
-      maxPages: 200,
+      maxPages: 0,
       timeoutSeconds: 15,
       stayInScope: true,
       excludedExtensions: DEFAULT_EXCLUDED_EXTS_STR,
@@ -354,6 +397,9 @@
       tabBackground: true,
       autoCloseTab: true
     };
+    if (targetConfig.maxPages === undefined || targetConfig.maxPages === 200) {
+      targetConfig.maxPages = 0;
+    }
     if (targetConfig.timeoutSeconds === undefined) {
       targetConfig.timeoutSeconds = 15;
     }
@@ -380,6 +426,15 @@
     if (state && state.target === currentTarget) {
       // Existing state for this target, preserve settings
       state.settings = { ...targetConfig, ...(state.settings || {}) };
+      if (state.settings.maxPages === 200) {
+        state.settings.maxPages = 0;
+      }
+
+      // If state was incorrectly marked "completed" while links still remained in queue,
+      // auto-correct status to "stopped" so the user can easily continue crawling!
+      if (state.status === "completed" && Array.isArray(state.queue) && state.queue.length > 0) {
+        state.status = "stopped";
+      }
 
       // Purge any out-of-scope, excluded or blacklisted URLs from the existing queue
       if (Array.isArray(state.queue)) {
@@ -397,6 +452,8 @@
           if (!state.depthMap[u]) state.depthMap[u] = 1;
         });
       } else {
+        // Synchronize any newly discovered links from storage into the queue
+        syncStoredLinksIntoQueue(state, storedLinks, extSet, blacklistPatterns, 1);
         const total = (state.visited ? state.visited.length : 0) + (state.queue ? state.queue.length : 0);
         state.totalCount = total;
       }
@@ -473,8 +530,10 @@
     crawlerMaxDepthInput.value = settings.maxDepth ?? 3;
     crawlerMaxDepthValue.textContent = crawlerMaxDepthInput.value;
 
-    crawlerMaxPagesInput.value = settings.maxPages ?? 200;
-    crawlerMaxPagesValue.textContent = crawlerMaxPagesInput.value;
+    const maxP = parseInt(settings.maxPages, 10);
+    const validMaxP = (isNaN(maxP) || maxP < 0) ? 0 : maxP;
+    crawlerMaxPagesInput.value = validMaxP;
+    crawlerMaxPagesValue.textContent = validMaxP === 0 ? "Unlimited (0)" : String(validMaxP);
 
     if (crawlerTimeoutInput) {
       crawlerTimeoutInput.value = settings.timeoutSeconds ?? 15;
@@ -482,8 +541,6 @@
         crawlerTimeoutValue.textContent = `${crawlerTimeoutInput.value}s`;
       }
     }
-
-    crawlerStayInScopeCheckbox.checked = settings.stayInScope !== false;
 
     // Excluded Extensions
     if (crawlerExcludedExtensionsInput) {
@@ -568,11 +625,22 @@
       currentLinkText.textContent = `(Paused) Last URL: ${state.currentLink || "None"}`;
       currentLinkText.title = state.currentLink || "";
     } else if (state.status === "completed") {
-      currentLinkText.textContent = "✅ Crawling completed for all discovered pages in scope!";
-      currentLinkText.title = "Completed";
+      if (remaining > 0) {
+        currentLinkText.textContent = `⏸ Crawl halted with ${remaining} links remaining in queue.`;
+      } else {
+        currentLinkText.textContent = "✅ Crawling completed for all discovered pages in scope!";
+      }
+      currentLinkText.title = currentLinkText.textContent;
     } else if (state.status === "stopped") {
-      currentLinkText.textContent = "⏹ Crawling stopped by user.";
-      currentLinkText.title = "Stopped";
+      const maxPagesLimit = parseInt(state.settings?.maxPages, 10) || 0;
+      if (maxPagesLimit > 0 && crawled >= maxPagesLimit && remaining > 0) {
+        currentLinkText.textContent = `⏹ Stopped: Reached Max Pages limit (${maxPagesLimit}). ${remaining} links remaining in queue.`;
+      } else if (remaining > 0) {
+        currentLinkText.textContent = `⏹ Crawling stopped. ${remaining} links remaining in queue.`;
+      } else {
+        currentLinkText.textContent = "⏹ Crawling stopped by user.";
+      }
+      currentLinkText.title = currentLinkText.textContent;
     } else {
       currentLinkText.textContent = remaining > 0 ? `Ready. ${remaining} links queued.` : "Waiting to start...";
       currentLinkText.title = currentLinkText.textContent;
@@ -655,7 +723,9 @@
   function handleSettingChange() {
     crawlerDelayValue.textContent = `${crawlerDelayInput.value}s`;
     crawlerMaxDepthValue.textContent = crawlerMaxDepthInput.value;
-    crawlerMaxPagesValue.textContent = crawlerMaxPagesInput.value;
+    const parsedMaxP = parseInt(crawlerMaxPagesInput.value, 10);
+    const currentMaxP = (isNaN(parsedMaxP) || parsedMaxP < 0) ? 0 : parsedMaxP;
+    crawlerMaxPagesValue.textContent = currentMaxP === 0 ? "Unlimited (0)" : String(currentMaxP);
     if (crawlerTimeoutInput && crawlerTimeoutValue) {
       crawlerTimeoutValue.textContent = `${crawlerTimeoutInput.value}s`;
     }
@@ -700,9 +770,9 @@
       const newSettings = {
         delaySeconds: parseFloat(crawlerDelayInput.value) || 1.5,
         maxDepth: parseInt(crawlerMaxDepthInput.value, 10) || 3,
-        maxPages: parseInt(crawlerMaxPagesInput.value, 10) || 200,
+        maxPages: currentMaxP,
         timeoutSeconds: crawlerTimeoutInput ? (parseFloat(crawlerTimeoutInput.value) || 15) : 15,
-        stayInScope: crawlerStayInScopeCheckbox.checked,
+        stayInScope: true,
         excludedExtensions: crawlerExcludedExtensionsInput ? crawlerExcludedExtensionsInput.value : DEFAULT_EXCLUDED_EXTS_STR,
         excludedUrls: crawlerExcludedUrlsInput ? crawlerExcludedUrlsInput.value : "",
         customHeaders: currentCustomHeaders,
@@ -731,6 +801,8 @@
         } else if (Array.isArray(state.queue)) {
           // If crawl was already initiated or paused, purge newly excluded extensions and blacklisted URLs
           state.queue = state.queue.filter(url => !isStaticAsset(url, extSet) && !isUrlBlacklisted(url, blacklistPatterns));
+          // Synchronize any newly discovered in-scope links from storage into the existing queue
+          syncStoredLinksIntoQueue(state, storedLinks, extSet, blacklistPatterns, 1);
           const total = (state.visited ? state.visited.length : 0) + state.queue.length;
           state.totalCount = total;
           state.percentage = total > 0 ? Math.round(((state.visited ? state.visited.length : 0) / total) * 100) : 0;
@@ -761,7 +833,6 @@
   if (crawlerTimeoutInput) {
     crawlerTimeoutInput.addEventListener("input", handleSettingChange);
   }
-  crawlerStayInScopeCheckbox.addEventListener("change", handleSettingChange);
 
   if (crawlerExcludedExtensionsInput) {
     crawlerExcludedExtensionsInput.addEventListener("input", handleSettingChange);
@@ -848,43 +919,115 @@
 
   // 6. Tab Navigation Helpers
   async function getOrCreateCrawlerTab(url, inBackground = true, customHeaders = []) {
+    // 1. Identify current panel/user tab to protect its focus
+    let currentPanelTab = null;
+    try {
+      currentPanelTab = await chrome.tabs.getCurrent();
+      if (!currentPanelTab) {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        currentPanelTab = activeTab || null;
+      }
+    } catch (e) {}
+
+    // 2. If crawler tab already exists and is alive, reuse it
     if (crawlerTabId !== null) {
       try {
         const existing = await chrome.tabs.get(crawlerTabId);
         if (existing && !existing.discarded) {
           await syncCrawlerTabHeaders(crawlerTabId, customHeaders);
           await chrome.tabs.update(crawlerTabId, { url });
+
+          // Guarantee focus adheres to user setting
+          if (inBackground) {
+            if (currentPanelTab && currentPanelTab.id && existing.active) {
+              try {
+                await chrome.tabs.update(currentPanelTab.id, { active: true });
+              } catch (err) {}
+            }
+          } else {
+            if (!existing.active) {
+              try {
+                await chrome.tabs.update(crawlerTabId, { active: true });
+              } catch (err) {}
+            }
+          }
           return crawlerTabId;
         }
       } catch (e) {
         crawlerTabId = null;
       }
     }
-    const tab = await chrome.tabs.create({ url: "about:blank", active: !inBackground });
-    crawlerTabId = tab.id;
-    await syncCrawlerTabHeaders(crawlerTabId, customHeaders);
-    await chrome.tabs.update(crawlerTabId, { url });
+
+    // 3. Create fresh crawler tab
+    const hasCustomHeaders = Array.isArray(customHeaders) && customHeaders.some(h => h && h.name && String(h.name).trim());
+
+    if (hasCustomHeaders) {
+      // Need tabId first to apply declarativeNetRequest session rules before page navigation
+      const tab = await chrome.tabs.create({ url: "about:blank", active: !inBackground });
+      crawlerTabId = tab.id;
+      await syncCrawlerTabHeaders(crawlerTabId, customHeaders);
+      await chrome.tabs.update(crawlerTabId, { url });
+    } else {
+      // Atomic direct navigation at target URL (avoids two-step about:blank flicker and focus theft)
+      const tab = await chrome.tabs.create({ url: url, active: !inBackground });
+      crawlerTabId = tab.id;
+      await syncCrawlerTabHeaders(crawlerTabId, []);
+    }
+
+    // 4. Forcefully guarantee focus preservation if inBackground is requested
+    if (inBackground && currentPanelTab && currentPanelTab.id) {
+      try {
+        const tabCheck = await chrome.tabs.get(crawlerTabId);
+        if (tabCheck && tabCheck.active) {
+          await chrome.tabs.update(currentPanelTab.id, { active: true });
+        }
+      } catch (e) {}
+    } else if (!inBackground && crawlerTabId) {
+      try {
+        await chrome.tabs.update(crawlerTabId, { active: true });
+      } catch (e) {}
+    }
+
     return crawlerTabId;
   }
 
   function waitForTabLoad(tabId, timeoutMs = 15000) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       let timer = null;
-      function listener(updatedTabId, changeInfo) {
-        if (updatedTabId === tabId && changeInfo.status === "complete") {
-          cleanup();
-          resolve(true);
-        }
-      }
+      let resolved = false;
+
       function cleanup() {
         if (timer) clearTimeout(timer);
         chrome.tabs.onUpdated.removeListener(listener);
       }
+
+      function listener(updatedTabId, changeInfo) {
+        if (!resolved && updatedTabId === tabId && changeInfo.status === "complete") {
+          resolved = true;
+          cleanup();
+          resolve(true);
+        }
+      }
+
       timer = setTimeout(() => {
-        cleanup();
-        resolve(false);
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve(false);
+        }
       }, timeoutMs);
+
       chrome.tabs.onUpdated.addListener(listener);
+
+      // Check if tab is already completed (instant load or browser cache)
+      try {
+        const currentTab = await chrome.tabs.get(tabId);
+        if (!resolved && currentTab && currentTab.status === "complete") {
+          resolved = true;
+          cleanup();
+          resolve(true);
+        }
+      } catch (e) {}
     });
   }
 
@@ -931,18 +1074,21 @@
   startCrawlerBtn.addEventListener("click", async () => {
     const res = await getStorage(["crawler_state", "links"]);
     let state = res.crawler_state || {};
+    const storedLinks = (res.links && res.links[currentTarget]) || [];
+    const currentExcluded = (state.settings && state.settings.excludedExtensions) || DEFAULT_EXCLUDED_EXTS_STR;
+    const extVal = parseAndValidateExtensions(currentExcluded);
+    const blacklistPatterns = parseExcludedUrlPatterns(state.settings?.excludedUrls);
 
     // If queue is empty, re-seed
     if (!state.queue || state.queue.length === 0) {
-      const storedLinks = (res.links && res.links[currentTarget]) || [];
-      const currentExcluded = (state.settings && state.settings.excludedExtensions) || DEFAULT_EXCLUDED_EXTS_STR;
-      const extVal = parseAndValidateExtensions(currentExcluded);
-      const blacklistPatterns = parseExcludedUrlPatterns(state.settings?.excludedUrls);
       state.queue = buildInitialQueue(currentTarget, storedLinks, extVal.extSet, blacklistPatterns);
       state.depthMap = state.depthMap || {};
-      state.queue.forEach(u => {
+      state.queue.forEach((u) => {
         if (!state.depthMap[u]) state.depthMap[u] = 1;
       });
+    } else {
+      // Synchronize any newly discovered in-scope links from storage into the existing queue
+      syncStoredLinksIntoQueue(state, storedLinks, extVal.extSet, blacklistPatterns, 1);
     }
 
     state.status = "running";
@@ -952,8 +1098,14 @@
   });
 
   resumeCrawlerBtn.addEventListener("click", async () => {
-    const res = await getStorage(["crawler_state"]);
+    const res = await getStorage(["crawler_state", "links"]);
     const state = res.crawler_state || {};
+    const storedLinks = (res.links && res.links[currentTarget]) || [];
+    const currentExcluded = (state.settings && state.settings.excludedExtensions) || DEFAULT_EXCLUDED_EXTS_STR;
+    const extVal = parseAndValidateExtensions(currentExcluded);
+    const blacklistPatterns = parseExcludedUrlPatterns(state.settings?.excludedUrls);
+    syncStoredLinksIntoQueue(state, storedLinks, extVal.extSet, blacklistPatterns, 1);
+
     state.status = "running";
     await setStorage({ crawler_state: state });
     updateUI(state);
@@ -988,7 +1140,7 @@
     const settings = (res.crawler_state && res.crawler_state.settings) || (res.crawler_configs && res.crawler_configs[currentTarget]) || {
       delaySeconds: 1.5,
       maxDepth: 3,
-      maxPages: 200,
+      maxPages: 0,
       timeoutSeconds: 15,
       stayInScope: true,
       excludedExtensions: DEFAULT_EXCLUDED_EXTS_STR,
@@ -1049,7 +1201,7 @@
         const settings = state.settings || {
           delaySeconds: 1.5,
           maxDepth: 3,
-          maxPages: 200,
+          maxPages: 0,
           timeoutSeconds: 15,
           stayInScope: true,
           excludedExtensions: DEFAULT_EXCLUDED_EXTS_STR,
@@ -1065,12 +1217,33 @@
         const blacklistPatterns = parseExcludedUrlPatterns(settings.excludedUrls);
         const timeoutSec = Math.max(2, parseFloat(settings.timeoutSeconds) || 15);
         const timeoutMs = timeoutSec * 1000;
+        const maxPagesLimit = parseInt(settings.maxPages, 10) || 0;
 
-        // Check completion limits
-        if (!state.queue || state.queue.length === 0 || state.visited.length >= settings.maxPages) {
+        // Synchronize newly discovered in-scope links from storage into the active queue
+        const currentStorageLinks = (res.links && res.links[currentTarget]) || [];
+        syncStoredLinksIntoQueue(state, currentStorageLinks, currentExtSet, blacklistPatterns, 1);
+
+        // Check completion limits:
+        // 1. Genuine queue completion: all URLs in scope have been visited
+        if (!state.queue || state.queue.length === 0) {
           state.status = "completed";
           state.currentLink = "";
+          state.percentage = 100;
           addLogEntry(state, true, currentTarget, "Finished! All discovered URLs crawled.", 0);
+          await setStorage({ crawler_state: state });
+          if (settings.autoCloseTab) {
+            await closeCrawlerTabIfNeeded();
+          }
+          updateUI(state);
+          break;
+        }
+
+        // 2. Max Total Pages limit reached (only when user explicitly specified a limit > 0)
+        if (maxPagesLimit > 0 && state.visited.length >= maxPagesLimit) {
+          state.status = "stopped";
+          state.currentLink = "";
+          const remaining = state.queue.length;
+          addLogEntry(state, false, currentTarget, `Stopped: Reached Max Pages limit (${maxPagesLimit}). ${remaining} links remaining in queue.`, 0);
           await setStorage({ crawler_state: state });
           if (settings.autoCloseTab) {
             await closeCrawlerTabIfNeeded();
@@ -1087,8 +1260,8 @@
           continue;
         }
 
-        // Scope check: Skip any URLs outside target pattern
-        if (settings.stayInScope && !isUrlInScope(nextUrl, currentTarget)) {
+        // Scope check: Always strictly stay inside target domain / pattern
+        if (!isUrlInScope(nextUrl, currentTarget)) {
           state.visited.push(nextUrl);
           await setStorage({ crawler_state: state });
           continue;
@@ -1187,6 +1360,9 @@
               linksObj[currentTarget] = mergedStored;
               await setStorage({ links: linksObj });
             }
+
+            // Immediately sync any newly discovered links from storage into the active queue
+            syncStoredLinksIntoQueue(state, mergedStored, currentExtSet, blacklistPatterns, currentDepth + 1);
           } catch (err) {
             logNote = `Tab Error: ${err.message || "Failed"}`;
           }
@@ -1233,6 +1409,9 @@
                 linksObj[currentTarget] = mergedStored;
                 await setStorage({ links: linksObj });
               }
+
+              // Immediately sync any newly discovered links into the active queue
+              syncStoredLinksIntoQueue(state, mergedStored, currentExtSet, blacklistPatterns, currentDepth + 1);
             } else {
               clearTimeout(abortTimer);
               logNote = `HTTP ${fetchResp.status} ${fetchResp.statusText || ""}`;
@@ -1248,14 +1427,13 @@
         }
 
         // Enqueue subsequent links if depth limit allows
-        if (isSuccess && currentDepth < settings.maxDepth) {
+        const maxDepthLimit = parseInt(settings.maxDepth, 10) || 3;
+        if (isSuccess && currentDepth < maxDepthLimit) {
+          const visitedSet = new Set(state.visited || []);
+          const queueSet = new Set(state.queue || []);
           for (const candidate of discoveredInThisStep) {
-            if (state.visited.length + state.queue.length >= settings.maxPages) {
-              break;
-            }
-
-            // Scope validation
-            if (settings.stayInScope && !isUrlInScope(candidate, currentTarget)) {
+            // Scope validation: strictly stay within target domain / pattern
+            if (!isUrlInScope(candidate, currentTarget)) {
               continue;
             }
 
@@ -1273,8 +1451,9 @@
             const cleanCandidate = candidate.split("#")[0].trim();
             if (!cleanCandidate) continue;
 
-            if (!state.visited.includes(cleanCandidate) && !state.queue.includes(cleanCandidate)) {
+            if (!visitedSet.has(cleanCandidate) && !queueSet.has(cleanCandidate)) {
               state.queue.push(cleanCandidate);
+              queueSet.add(cleanCandidate);
               state.depthMap = state.depthMap || {};
               state.depthMap[cleanCandidate] = currentDepth + 1;
             }

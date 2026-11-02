@@ -125,10 +125,10 @@
         <div class="setting-item">
           <label for="crawlerMaxPages" class="setting-label">
             <span>Max Total Pages</span>
-            <span id="crawlerMaxPagesValue">200</span>
+            <span id="crawlerMaxPagesValue">Unlimited (0)</span>
           </label>
-          <input type="number" id="crawlerMaxPages" class="setting-input" min="5" max="5000" step="10" value="200" />
-          <span class="setting-desc">Maximum number of unique pages to crawl before stopping.</span>
+          <input type="number" id="crawlerMaxPages" class="setting-input" min="0" max="50000" step="50" value="0" />
+          <span class="setting-desc">Maximum number of unique pages to crawl. Set to <b>0 for Unlimited</b> (crawls all queued URLs).</span>
         </div>
         <div class="setting-item">
           <label for="crawlerTimeout" class="setting-label">
@@ -141,10 +141,6 @@
       </div>
       <div class="spliter-line"></div>
 
-      <label class="setting-checkbox-label">
-        <input type="checkbox" id="crawlerStayInScope" checked />
-        <span>Strictly stay inside target domain / wildcard pattern</span>
-      </label>
       <!-- Excluded File Extensions Filter -->
       <div class="setting-item" style="margin-top: 14px;">
         <label for="crawlerExcludedExtensions" class="setting-label">
