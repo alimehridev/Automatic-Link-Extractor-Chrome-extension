@@ -52,7 +52,7 @@ Automatic Link Extractor - Chrome extension/
 ├── PROJECT.md                 # ← this file
 ├── todos                      # Empty placeholder file (unused)
 └── assets/
-    ├── images/                # icon-512.png, radar.png, screenshot1..3.png
+    ├── images/                # icon-512.png, radar.png, settings.svg, crawler.svg, screenshot1..3.png
     ├── styles/
     │   ├── style.css          # Dashboard + shared styles
     │   └── modal.css          # JS-crawler modal styles
@@ -320,7 +320,7 @@ Single-page host for **both** dashboard views. Key elements/IDs:
 - Main view: `#originInput`, `#addOriginBtn`, `#originList`, `#data`, `#added_origin`.
 - Origin view: `.backBtn`, sensitivity checkboxes `#all`, `#childList`, `#subtree`,
   `#attributes`, `#attributeOldValue`, `#characterData`, `#characterDataOldValue`,
-  `#save_sensitivities`, `#origin`, `#links`, `.pagination`, `#copy_all`,
+  `#save_sensitivities`, `#openAutoCrawlBtn`, `#origin`, `#links`, `.pagination`, `#copy_all`,
   `#get_js_links`, `#removeAllBtn`.
 - JS-crawler modal `#myModal`: `#jsFileList`, `#jsFileCount`, `#selectAllNoneBtn`,
   include/exclude regex containers (`#add-regex-include`, `#add-regex-exclude` are class
@@ -633,4 +633,5 @@ These are real defects or sharp edges; some are intentional, some are bugs:
 - **Confirmed Origin & Storage Cascade Deletion (`addorigin.js`):** Added user confirmation (`confirm()`) when clicking `.removeLogBtn` on target origin rows, and ensured complete cascading deletion of all associated keys across `origins`, `sensitivities`, `regexes`, `extraction_rules`, and `links` including trailing slash and encoding variations.
 - **Origin Dashboard UI Enhancements:** Added per-origin link count badges beside `.removeLogBtn`, total origin count badge next to `🔍 Origin List`, refined `originInput` placeholder with an informative note below highlighting wildcard examples, empty state messaging, and improved CSS responsive layout for long origin URLs.
 - **Live Search for Origins:** Added `#searchOriginsInput` beneath `.origin-header` in `dashboard.html` handled dynamically in `addorigin.js` with instant substring filtering, live counter updates (`X of Y`), and empty result handling.
+- **Auto Crawl Button & Custom Spider Icon:** Designed a crisp Lucide-style vector spider icon (`assets/images/crawler.svg`) and integrated `#openAutoCrawlBtn` (`.auto-crawl-btn`) wrapped in `.auto-crawl-container` directly below the Sensitivity Configurations `div.input-group` in `origin_dashboard`. Applied a striking deep orange/amber theme (`#ea580c`, hover `#c2410c`, active scale) with an inverted white icon filter, maintaining visual balance with existing dashboard controls.
 - **Origin List Pagination (7 items/page):** Implemented pagination for target origins matching the link pagination design (`.pagination`, `.page-button`, `.page-button-active`), displaying 7 origins per page, synchronized dynamically with real-time origin search.

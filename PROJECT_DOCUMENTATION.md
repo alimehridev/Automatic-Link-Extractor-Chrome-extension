@@ -266,17 +266,24 @@ flowchart TD
   - بهبود ساختار هدر بخش مبدأها با نشانگر تعداد کل Originها (`#originCountBadge`)، فیلد جستجوی زنده مبدأها (`#searchOriginsInput`)، یادداشت راهنمای وایلدکاردها و صفحه‌بندی اختصاصی مبدأها (`#originPagination`).
 - پنجره‌های مودال اختصاصی: مودال خزشگر جاوااسکریپت (`#myModal`)، مودال ساب‌دامنه‌ها (`#subdomainModal`)، مودال ورود دستی لینک‌ها (`#addLinksModal`) و مودال تنظیمات استخراج (`#settingsModal`).
 - فیلدهای جستجوی بلادرنگ `#searchLinksInput` و `#searchOriginsInput`.
+- دکمه اختصاصی **Auto Crawl** (`#openAutoCrawlBtn`, `.auto-crawl-btn`) با آیکون وکتور عنکبوت/خزشگر (`assets/images/crawler.svg`) مستقیماً زیر بخش تنظیمات Sensitivity (`div.input-group`) در `origin_dashboard` جهت باز کردن پنل خزش خودکار صفحات تارگت جاری.
 - لود اسکریپت‌های ماژولار: `pattern_matcher.js`، `dashboard.js`، `sensitivities.js`، `modal.js`، `subdomains.js`، `custom_links.js` و `settings.js`.
 
 ### `assets/styles/style.css` و `assets/styles/modal.css`
 - استایل‌دهی بنفش به دکمه `#extract_subdomains` و اعمال استایل دکمه‌های کپی و کادر textarea مودال.
 - استایل دکمه سبز رنگ `+` (`#openAddLinksModalBtn`) و کادر ورودی سفید رنگ لینک‌های دستی (`#customLinksInput`).
+- استایل‌دهی مدرن به دکمه Auto Crawl (`.auto-crawl-btn`, `#openAutoCrawlBtn`) با رنگ نارنجی گرم (`#ea580c` / hover `#c2410c`)، افکت سایه و فشردن (active scale)، چیدمان flex و فیلتر معکوس‌سازی رنگ آیکون به سفید خالص.
 
 ---
 
 ## ۷. آخرین تغییرات اعمال شده در پروژه (Git History)
 
-1. **پیاده‌سازی صفحه‌بندی (Pagination) اختصاصی برای فهرست Originها (`addorigin.js`, `dashboard.html`):**
+1. **طراحی آیکون و دکمه پنل Auto Crawl در صفحه هر تارگت (`dashboard.html`, `crawler.svg`, `style.css`):**
+   - طراحی آیکون وکتور اختصاصی خزشگر (`crawler.svg`) با طراحی مدرن خزشگر/عنکبوت (مطابق با استایل Lucide/Feather در سایز 16x16 و stroke تمیز).
+   - افزودن دکمه `#openAutoCrawlBtn` (`.auto-crawl-btn`) در کانتینر `.auto-crawl-container` مستقیماً زیر تگ `div.input-group` (تنظیمات حساسیت) در `origin_dashboard`.
+   - استایل‌دهی متمایز با رنگ نارنجی/کهربایی جذاب (`#ea580c` با هاور `#c2410c` و سایه نئونی)، هماهنگ با ساختار دکمه‌های اصلی داشبورد و دارای آیکون سفید معکوس‌شده.
+
+2. **پیاده‌سازی صفحه‌بندی (Pagination) اختصاصی برای فهرست Originها (`addorigin.js`, `dashboard.html`):**
    - افزودن کانتینر `#originPagination` با همان استایل بصری استاندارد پیجینیشن لینک‌ها (`.pagination`, `.page-button`, `.page-button-active`).
    - تنظیم محدودیت ۷ آیتم در هر صفحه (`per_page = 7`) برای خلوت‌تر و منظم‌تر شدن صفحه اصلی داشبورد.
    - هماهنگی و همگام‌سازی کامل با فیلد جستجوی `#searchOriginsInput` (محاسبه مجدد تعداد صفحات بر اساس نتایج جستجو و بازنشانی خودکار به صفحه اول).

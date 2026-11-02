@@ -45,7 +45,6 @@ h2 {
 .input-group {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 input[type="text"] {
@@ -452,4 +451,48 @@ input:checked+.slider:before {
 
 .page .keyword a:hover {
   text-decoration: underline;
+}
+
+/* Auto Crawl Button */
+.auto-crawl-container {
+  margin-top: 10px;
+  margin-bottom: 16px;
+}
+
+.auto-crawl-btn,
+#openAutoCrawlBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  background-color: #ea580c;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
+  box-sizing: border-box;
+}
+
+.auto-crawl-btn:hover,
+#openAutoCrawlBtn:hover {
+  background-color: #c2410c;
+  box-shadow: 0 3px 8px rgba(234, 88, 12, 0.35);
+}
+
+.auto-crawl-btn:active,
+#openAutoCrawlBtn:active {
+  transform: scale(0.99);
+}
+
+.auto-crawl-btn img,
+#openAutoCrawlBtn img {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  filter: brightness(0) invert(1);
 }
