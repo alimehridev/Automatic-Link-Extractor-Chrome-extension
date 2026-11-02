@@ -88,13 +88,22 @@
     </section>
 
     <!-- Crawler Settings Card -->
-    <section class="crawler-card">
-      <div class="crawler-card-title">
-        <span>⚙️ Crawler Settings & Rate Limiting</span>
-        <span id="settingsSavedIndicator" class="settings-saved-indicator">Saved ✓</span>
+    <section class="crawler-card" id="crawlerSettingsCard">
+      <div class="crawler-card-title" id="crawlerSettingsHeader" style="cursor: pointer; user-select: none;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>⚙️ Crawler Settings & Rate Limiting</span>
+          <span id="settingsSavedIndicator" class="settings-saved-indicator">Saved ✓</span>
+        </div>
+        <button type="button" id="toggleSettingsBtn" class="card-toggle-btn" title="Minimize settings">
+          <span id="toggleSettingsText">Minimize</span>
+          <svg id="toggleSettingsIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s ease;">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
       </div>
 
-      <div class="settings-grid">
+      <div id="crawlerSettingsBody" class="crawler-card-body">
+        <div class="settings-grid">
         <div class="setting-item">
           <label for="crawlerDelay" class="setting-label">
             <span>Delay Between Requests</span>
@@ -121,17 +130,115 @@
           <input type="number" id="crawlerMaxPages" class="setting-input" min="5" max="5000" step="10" value="200" />
           <span class="setting-desc">Maximum number of unique pages to crawl before stopping.</span>
         </div>
+        <div class="setting-item">
+          <label for="crawlerTimeout" class="setting-label">
+            <span>Request / Page Timeout</span>
+            <span id="crawlerTimeoutValue">15s</span>
+          </label>
+          <input type="number" id="crawlerTimeout" class="setting-input" min="2" max="120" step="1" value="15" />
+          <span class="setting-desc">Max seconds to wait for a page or request to respond before skipping.</span>
+        </div>
       </div>
+      <div class="spliter-line"></div>
 
       <label class="setting-checkbox-label">
         <input type="checkbox" id="crawlerStayInScope" checked />
-        <span>Strictly stay inside target domain / wildcard pattern (Recommended)</span>
+        <span>Strictly stay inside target domain / wildcard pattern</span>
       </label>
+      <!-- Excluded File Extensions Filter -->
+      <div class="setting-item" style="margin-top: 14px;">
+        <label for="crawlerExcludedExtensions" class="setting-label">
+          <span>Excluded File Extensions (Skip during crawl)</span>
+          <span id="crawlerExcludedCount" class="badge-count" style="font-size: 11px; font-weight: 600; color: #64748b;">31 extensions</span>
+        </label>
+        <input
+          type="text"
+          id="crawlerExcludedExtensions"
+          class="setting-input"
+          placeholder="e.g. png, jpg, jpeg, gif, svg, webp, ico, css, js, pdf, zip, mp4"
+          value="png, jpg, jpeg, gif, svg, webp, ico, css, js, mjs, pdf, zip, tar, gz, rar, 7z, mp3, mp4, wav, avi, mov, webm, woff, woff2, ttf, eot, otf, exe, dmg, apk, bin"
+        />
+        <span class="setting-desc">
+          Comma-separated file extensions to exclude from the crawl queue (both Fetch and Tab modes). Leave empty to allow crawling all file types.
+          <br />
+          default: <b>png, jpg, jpeg, gif, svg, webp, ico, css, js, mjs, pdf, zip, tar, gz, rar, 7z, mp3, mp4, wav, avi, mov, webm, woff, woff2, ttf, eot, otf, exe, dmg, apk, bin</b>
+        </span>
+      </div>
+      <div class="spliter-line"></div>
+      <!-- Excluded URL Patterns / Blacklist -->
+      <div class="setting-item" style="margin-top: 14px;">
+        <label for="crawlerExcludedUrls" class="setting-label">
+          <span>Excluded URL Patterns (Blacklist / Do not crawl)</span>
+          <span id="crawlerExcludedUrlsCount" class="badge-count" style="font-size: 11px; font-weight: 600; color: #64748b;">0 rules</span>
+        </label>
+        <textarea
+          id="crawlerExcludedUrls"
+          class="setting-input"
+          style="resize: vertical; min-height: 58px; font-family: monospace; font-size: 12px; line-height: 1.45;"
+          placeholder="e.g.&#10;https://example.com/admin/*&#10;https://example.com/logout&#10;/admin/*"
+        ></textarea>
+        <span class="setting-desc">One pattern per line or comma-separated. Supports wildcard (<code>*</code>) and exact absolute URLs. Any matching URLs will be excluded and never crawled.</span>
+      </div>
+      <div class="spliter-line"></div>
+      <!-- Custom Request Headers -->
+      <div class="setting-item" style="margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span class="setting-label" style="margin-bottom: 0;">Custom Request Headers</span>
+          <span id="crawlerHeadersCount" class="badge-count" style="font-size: 11px; font-weight: 600; color: #64748b;">0 headers</span>
+        </div>
+        <span class="setting-desc" style="margin-bottom: 8px;">
+          Send custom HTTP headers with every crawl request (Fetch and Tab modes). e.g., <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-Custom-Header: value</code>.
+        </span>
+        <div id="crawlerHeadersList" class="headers-list-container">
+          <!-- Dynamically populated header rows -->
+        </div>
+        <button type="button" id="addHeaderBtn" class="btn btn-secondary" style="align-self: flex-start; padding: 6px 12px; font-size: 12px; gap: 4px; display: inline-flex; align-items: center; cursor: pointer; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 500;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Header
+        </button>
+      </div>
+      <div class="spliter-line"></div>
+      <!-- Tab-driven Navigation Section -->
+      <div class="tab-nav-section" style="margin-top: 18px;">
+        <label class="setting-checkbox-label" style="font-weight: 700; color: #0f172a;">
+          <input type="checkbox" id="crawlerUseTabNavigation" />
+          <span>🌐 Enable Tab-driven Navigation (Real Browser Tab & Full JavaScript Execution)</span>
+        </label>
+        <div class="setting-desc" style="margin-left: 24px; margin-top: 2px; margin-bottom: 12px;">
+          Opens a dedicated browser tab to navigate to each page. Captures React/Vue SPA dynamic DOM changes, background network calls, and cookies.
+        </div>
+
+        <div id="tabNavOptions" class="settings-grid" style="margin-top: 10px;">
+          <div class="setting-item">
+            <label for="crawlerPageWaitDelay" class="setting-label">
+              <span>Wait after Page Load</span>
+              <span id="crawlerPageWaitDelayValue">2.0s</span>
+            </label>
+            <input type="number" id="crawlerPageWaitDelay" class="setting-input" min="0.5" max="30" step="0.5" value="2.0" />
+            <span class="setting-desc">Seconds to pause after page finishes loading before extracting links (allows JS & AJAX to finish rendering).</span>
+          </div>
+
+          <div class="setting-item" style="justify-content: center;">
+            <label class="setting-checkbox-label" style="margin-top: 0;">
+              <input type="checkbox" id="crawlerTabBackground" checked />
+              <span>Open tab in background (unfocused)</span>
+            </label>
+            <label class="setting-checkbox-label" style="margin-top: 8px;">
+              <input type="checkbox" id="crawlerAutoCloseTab" checked />
+              <span>Auto-close tab when crawling ends</span>
+            </label>
+          </div>
+        </div>
+      </div>
 
       <div class="settings-note">
         💡 <strong>Dynamic Application:</strong> Any changes made to these settings are automatically saved and applied immediately to the next link in the crawl queue.
       </div>
-    </section>
+    </div>
+  </section>
 
     <!-- Activity & Discovery Logs Card -->
     <section class="crawler-card">

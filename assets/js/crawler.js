@@ -35,8 +35,30 @@
   const crawlerMaxDepthValue = document.getElementById("crawlerMaxDepthValue");
   const crawlerMaxPagesInput = document.getElementById("crawlerMaxPages");
   const crawlerMaxPagesValue = document.getElementById("crawlerMaxPagesValue");
+  const crawlerTimeoutInput = document.getElementById("crawlerTimeout");
+  const crawlerTimeoutValue = document.getElementById("crawlerTimeoutValue");
   const crawlerStayInScopeCheckbox = document.getElementById("crawlerStayInScope");
+  const crawlerExcludedExtensionsInput = document.getElementById("crawlerExcludedExtensions");
+  const crawlerExcludedCount = document.getElementById("crawlerExcludedCount");
+  const crawlerExcludedUrlsInput = document.getElementById("crawlerExcludedUrls");
+  const crawlerExcludedUrlsCount = document.getElementById("crawlerExcludedUrlsCount");
+  const crawlerHeadersList = document.getElementById("crawlerHeadersList");
+  const addHeaderBtn = document.getElementById("addHeaderBtn");
+  const crawlerHeadersCount = document.getElementById("crawlerHeadersCount");
   const settingsSavedIndicator = document.getElementById("settingsSavedIndicator");
+  const crawlerSettingsCard = document.getElementById("crawlerSettingsCard");
+  const crawlerSettingsHeader = document.getElementById("crawlerSettingsHeader");
+  const toggleSettingsBtn = document.getElementById("toggleSettingsBtn");
+  const toggleSettingsText = document.getElementById("toggleSettingsText");
+  const toggleSettingsIcon = document.getElementById("toggleSettingsIcon");
+
+  // Tab-driven Navigation Settings
+  const crawlerUseTabNavigationCheckbox = document.getElementById("crawlerUseTabNavigation");
+  const tabNavOptionsContainer = document.getElementById("tabNavOptions");
+  const crawlerPageWaitDelayInput = document.getElementById("crawlerPageWaitDelay");
+  const crawlerPageWaitDelayValue = document.getElementById("crawlerPageWaitDelayValue");
+  const crawlerTabBackgroundCheckbox = document.getElementById("crawlerTabBackground");
+  const crawlerAutoCloseTabCheckbox = document.getElementById("crawlerAutoCloseTab");
 
   // Logs
   const logsContainer = document.getElementById("logsContainer");
@@ -46,16 +68,227 @@
   // Internal state tracking
   let isCrawlLoopRunning = false;
   let saveTimer = null;
+  let crawlerTabId = null;
+  const CRAWLER_SESSION_RULE_ID = 8888;
 
-  // Non-HTML asset extensions to filter out from crawling queue
-  const STATIC_ASSET_EXTS = new Set([
-    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico",
-    ".css", ".js", ".mjs",
-    ".pdf", ".zip", ".tar", ".gz", ".rar", ".7z",
-    ".mp3", ".mp4", ".wav", ".avi", ".mov", ".webm",
-    ".woff", ".woff2", ".ttf", ".eot", ".otf",
-    ".exe", ".dmg", ".apk", ".bin"
-  ]);
+  // Default non-HTML asset extensions to filter out from crawling queue
+  const DEFAULT_EXCLUDED_EXTS_STR = "png, jpg, jpeg, gif, svg, webp, ico, css, js, mjs, pdf, zip, tar, gz, rar, 7z, mp3, mp4, wav, avi, mov, webm, woff, woff2, ttf, eot, otf, exe, dmg, apk, bin";
+
+  // Validate and parse comma-separated extensions into a Set of lowercased ".ext" strings
+  function parseAndValidateExtensions(rawInput) {
+    if (typeof rawInput !== "string") {
+      rawInput = DEFAULT_EXCLUDED_EXTS_STR;
+    }
+    const cleanTokens = [];
+    const extSet = new Set();
+    const invalidTokens = [];
+    const validExtRegex = /^[a-zA-Z0-9_\-]+$/;
+
+    const parts = rawInput.split(",");
+    for (const part of parts) {
+      let trimmed = part.trim().toLowerCase();
+      if (!trimmed) continue;
+      trimmed = trimmed.replace(/^\.+/, "");
+      if (!trimmed) continue;
+
+      if (validExtRegex.test(trimmed)) {
+        const dotExt = "." + trimmed;
+        if (!extSet.has(dotExt)) {
+          extSet.add(dotExt);
+          cleanTokens.push(trimmed);
+        }
+      } else {
+        invalidTokens.push(trimmed);
+      }
+    }
+
+    return {
+      isValid: invalidTokens.length === 0,
+      invalidTokens: invalidTokens,
+      normalizedString: cleanTokens.join(", "),
+      extSet: extSet,
+      count: extSet.size
+    };
+  }
+
+  // Parse multiline or comma-separated URL blacklist patterns
+  function parseExcludedUrlPatterns(rawInput) {
+    if (typeof rawInput !== "string") return [];
+    const lines = rawInput.split(/[\r\n,]+/);
+    const patterns = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !patterns.includes(trimmed)) {
+        patterns.push(trimmed);
+      }
+    }
+    return patterns;
+  }
+
+  // Custom HTTP Headers Helpers
+  function getCustomHeadersFromUI() {
+    if (!crawlerHeadersList) return [];
+    const rows = crawlerHeadersList.querySelectorAll(".header-row");
+    const headers = [];
+    rows.forEach((row) => {
+      const nameInput = row.querySelector(".header-name-input");
+      const valInput = row.querySelector(".header-value-input");
+      const name = nameInput ? nameInput.value.trim() : "";
+      const val = valInput ? valInput.value.trim() : "";
+      if (name) {
+        headers.push({ name, value: val });
+      }
+    });
+    return headers;
+  }
+
+  function createHeaderRowElement(headerName = "", headerValue = "") {
+    const row = document.createElement("div");
+    row.className = "header-row";
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "setting-input header-name-input";
+    nameInput.placeholder = "Header Name (e.g. Authorization)";
+    nameInput.value = headerName;
+
+    const valInput = document.createElement("input");
+    valInput.type = "text";
+    valInput.className = "setting-input header-value-input";
+    valInput.placeholder = "Header Value (e.g. Bearer token)";
+    valInput.value = headerValue;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "header-remove-btn";
+    removeBtn.title = "Remove this header";
+    removeBtn.textContent = "✕";
+
+    // Auto-split on "Name: Value" if pasted or typed into name input
+    nameInput.addEventListener("input", () => {
+      const raw = nameInput.value;
+      if (raw.includes(":") && !valInput.value) {
+        const colonIdx = raw.indexOf(":");
+        const pName = raw.slice(0, colonIdx).trim();
+        const pVal = raw.slice(colonIdx + 1).trim();
+        if (pName) {
+          nameInput.value = pName;
+          valInput.value = pVal;
+        }
+      }
+      handleSettingChange();
+    });
+
+    valInput.addEventListener("input", handleSettingChange);
+
+    removeBtn.addEventListener("click", () => {
+      row.remove();
+      ensureHeadersEmptyHint();
+      handleSettingChange();
+    });
+
+    row.appendChild(nameInput);
+    row.appendChild(valInput);
+    row.appendChild(removeBtn);
+    return row;
+  }
+
+  function ensureHeadersEmptyHint() {
+    if (!crawlerHeadersList) return;
+    const existingRows = crawlerHeadersList.querySelectorAll(".header-row");
+    let hint = crawlerHeadersList.querySelector(".headers-empty-hint");
+    if (existingRows.length === 0) {
+      if (!hint) {
+        hint = document.createElement("div");
+        hint.className = "headers-empty-hint";
+        hint.textContent = "No custom headers configured. Click \"+ Add Header\" to define custom request headers.";
+        crawlerHeadersList.appendChild(hint);
+      }
+    } else {
+      if (hint) hint.remove();
+    }
+  }
+
+  function renderHeadersUI(headersArray = []) {
+    if (!crawlerHeadersList) return;
+    crawlerHeadersList.innerHTML = "";
+    if (Array.isArray(headersArray) && headersArray.length > 0) {
+      headersArray.forEach((h) => {
+        if (h && typeof h.name === "string" && h.name.trim()) {
+          const rowEl = createHeaderRowElement(h.name, h.value || "");
+          crawlerHeadersList.appendChild(rowEl);
+        }
+      });
+    }
+    ensureHeadersEmptyHint();
+    const count = crawlerHeadersList.querySelectorAll(".header-row").length;
+    if (crawlerHeadersCount) {
+      crawlerHeadersCount.textContent = `${count} ${count === 1 ? "header" : "headers"}`;
+    }
+  }
+
+  function buildHeadersObject(customHeaders) {
+    const headers = {};
+    if (Array.isArray(customHeaders)) {
+      for (const h of customHeaders) {
+        if (!h || !h.name) continue;
+        const key = String(h.name).trim();
+        if (!key) continue;
+        const val = h.value !== undefined && h.value !== null ? String(h.value).trim() : "";
+        headers[key] = val;
+      }
+    }
+    return headers;
+  }
+
+  async function syncCrawlerTabHeaders(tabId, customHeaders) {
+    if (!chrome.declarativeNetRequest?.updateSessionRules) {
+      return;
+    }
+    try {
+      const validHeaders = [];
+      if (Array.isArray(customHeaders)) {
+        for (const h of customHeaders) {
+          if (!h || !h.name) continue;
+          const name = String(h.name).trim();
+          if (!name) continue;
+          const value = h.value !== undefined && h.value !== null ? String(h.value).trim() : "";
+          validHeaders.push({
+            header: name,
+            operation: "set",
+            value: value
+          });
+        }
+      }
+
+      if (validHeaders.length === 0 || !tabId) {
+        await chrome.declarativeNetRequest.updateSessionRules({
+          removeRuleIds: [CRAWLER_SESSION_RULE_ID]
+        });
+        return;
+      }
+
+      const rule = {
+        id: CRAWLER_SESSION_RULE_ID,
+        priority: 1,
+        action: {
+          type: "modifyHeaders",
+          requestHeaders: validHeaders
+        },
+        condition: {
+          tabIds: [tabId],
+          resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest", "other"]
+        }
+      };
+
+      await chrome.declarativeNetRequest.updateSessionRules({
+        removeRuleIds: [CRAWLER_SESSION_RULE_ID],
+        addRules: [rule]
+      });
+    } catch (e) {
+      console.warn("Could not update declarativeNetRequest session rules:", e);
+    }
+  }
 
   // Utility: Storage Promise Wrappers
   function getStorage(keys) {
@@ -91,6 +324,18 @@
     window.location.href = `dashboard.html?origin=${encodeURIComponent(currentTarget)}`;
   });
 
+  // Tab Navigation Visibility Helper
+  function syncTabNavOptionsVisibility() {
+    if (!tabNavOptionsContainer || !crawlerUseTabNavigationCheckbox) return;
+    if (crawlerUseTabNavigationCheckbox.checked) {
+      tabNavOptionsContainer.style.opacity = "1";
+      tabNavOptionsContainer.style.pointerEvents = "auto";
+    } else {
+      tabNavOptionsContainer.style.opacity = "0.45";
+      tabNavOptionsContainer.style.pointerEvents = "none";
+    }
+  }
+
   // 3. Initialize or Load Storage State
   async function initCrawlerState() {
     const res = await getStorage(["crawler_state", "crawler_configs", "links"]);
@@ -99,37 +344,68 @@
       delaySeconds: 1.5,
       maxDepth: 3,
       maxPages: 200,
-      stayInScope: true
+      timeoutSeconds: 15,
+      stayInScope: true,
+      excludedExtensions: DEFAULT_EXCLUDED_EXTS_STR,
+      excludedUrls: "",
+      customHeaders: [],
+      useTabNavigation: false,
+      pageWaitDelay: 2.0,
+      tabBackground: true,
+      autoCloseTab: true
     };
+    if (targetConfig.timeoutSeconds === undefined) {
+      targetConfig.timeoutSeconds = 15;
+    }
+    if (targetConfig.excludedExtensions === undefined) {
+      targetConfig.excludedExtensions = DEFAULT_EXCLUDED_EXTS_STR;
+    }
+    if (targetConfig.excludedUrls === undefined) {
+      targetConfig.excludedUrls = "";
+    }
+    if (!Array.isArray(targetConfig.customHeaders)) {
+      targetConfig.customHeaders = [];
+    }
 
     // Apply settings to UI inputs
     applySettingsToInputs(targetConfig);
 
     let state = res.crawler_state;
     const storedLinks = (res.links && res.links[currentTarget]) || [];
+    const extVal = parseAndValidateExtensions(targetConfig.excludedExtensions);
+    const extSet = extVal.extSet;
+    const blacklistPatterns = parseExcludedUrlPatterns(targetConfig.excludedUrls);
 
     // Check if state exists for this target
     if (state && state.target === currentTarget) {
-      // Existing state for this target, preserve it
+      // Existing state for this target, preserve settings
       state.settings = { ...targetConfig, ...(state.settings || {}) };
 
+      // Purge any out-of-scope, excluded or blacklisted URLs from the existing queue
+      if (Array.isArray(state.queue)) {
+        state.queue = state.queue.filter(url => isUrlInScope(url, currentTarget) && !isStaticAsset(url, extSet) && !isUrlBlacklisted(url, blacklistPatterns));
+      }
+
       // If crawler is still idle and has not visited pages yet,
-      // sync the queue with the full list of stored links so all available links appear
+      // sync the queue with the full list of in-scope stored links
       if (state.status === "idle" && (!state.visited || state.visited.length === 0)) {
-        const fullQueue = buildInitialQueue(currentTarget, storedLinks);
+        const fullQueue = buildInitialQueue(currentTarget, storedLinks, extSet, blacklistPatterns);
         state.queue = fullQueue;
         state.totalCount = fullQueue.length;
         state.depthMap = state.depthMap || {};
         fullQueue.forEach(u => {
           if (!state.depthMap[u]) state.depthMap[u] = 1;
         });
+      } else {
+        const total = (state.visited ? state.visited.length : 0) + (state.queue ? state.queue.length : 0);
+        state.totalCount = total;
       }
 
       updateUI(state);
       await setStorage({ crawler_state: state });
     } else {
       // Create fresh state for this target
-      const seedQueue = buildInitialQueue(currentTarget, storedLinks);
+      const seedQueue = buildInitialQueue(currentTarget, storedLinks, extSet, blacklistPatterns);
 
       const depthMap = {};
       seedQueue.forEach(u => { depthMap[u] = 1; });
@@ -158,26 +434,28 @@
     }
   }
 
-  function buildInitialQueue(target, storedLinks) {
+  function buildInitialQueue(target, storedLinks, extSet, blacklistPatterns = []) {
     const queue = [];
 
-    // If target itself is a valid URL (not pure wildcard), add as root
+    // If target itself is a valid URL (not pure wildcard), add as root if not blacklisted
     if (/^https?:\/\//i.test(target) && !target.includes("*")) {
-      queue.push(target);
+      if (!isStaticAsset(target, extSet) && !isUrlBlacklisted(target, blacklistPatterns)) {
+        queue.push(target);
+      }
     } else {
       // If wildcard target (e.g. *.example.com or *://example.com/*), try to construct root
       const cleaned = target.replace(/^\*:\/\/|\/\*$/g, "").replace(/^\*\./, "https://");
-      if (/^https?:\/\//i.test(cleaned)) {
+      if (/^https?:\/\//i.test(cleaned) && !isStaticAsset(cleaned, extSet) && !isUrlBlacklisted(cleaned, blacklistPatterns)) {
         queue.push(cleaned);
       }
     }
 
-    // Add all existing discovered links from storage
+    // Add all existing discovered links from storage ONLY if they match target scope and not excluded/blacklisted!
     if (Array.isArray(storedLinks)) {
       for (const link of storedLinks) {
         if (typeof link === "string" && /^https?:\/\//i.test(link)) {
           const clean = link.split("#")[0].trim();
-          if (clean && !queue.includes(clean) && !isStaticAsset(clean)) {
+          if (clean && !queue.includes(clean) && !isStaticAsset(clean, extSet) && isUrlInScope(clean, target) && !isUrlBlacklisted(clean, blacklistPatterns)) {
             queue.push(clean);
           }
         }
@@ -198,7 +476,60 @@
     crawlerMaxPagesInput.value = settings.maxPages ?? 200;
     crawlerMaxPagesValue.textContent = crawlerMaxPagesInput.value;
 
+    if (crawlerTimeoutInput) {
+      crawlerTimeoutInput.value = settings.timeoutSeconds ?? 15;
+      if (crawlerTimeoutValue) {
+        crawlerTimeoutValue.textContent = `${crawlerTimeoutInput.value}s`;
+      }
+    }
+
     crawlerStayInScopeCheckbox.checked = settings.stayInScope !== false;
+
+    // Excluded Extensions
+    if (crawlerExcludedExtensionsInput) {
+      crawlerExcludedExtensionsInput.value = settings.excludedExtensions ?? DEFAULT_EXCLUDED_EXTS_STR;
+      const v = parseAndValidateExtensions(crawlerExcludedExtensionsInput.value);
+      if (crawlerExcludedCount) {
+        crawlerExcludedCount.textContent = `${v.count} excluded`;
+        if (!v.isValid) {
+          crawlerExcludedCount.textContent += ` (${v.invalidTokens.length} invalid)`;
+          crawlerExcludedCount.style.color = "#dc2626";
+          crawlerExcludedExtensionsInput.style.borderColor = "#ef4444";
+        } else {
+          crawlerExcludedCount.style.color = "#64748b";
+          crawlerExcludedExtensionsInput.style.borderColor = "";
+        }
+      }
+    }
+
+    // Excluded URL Patterns (Blacklist)
+    if (crawlerExcludedUrlsInput) {
+      crawlerExcludedUrlsInput.value = settings.excludedUrls ?? "";
+      const rules = parseExcludedUrlPatterns(crawlerExcludedUrlsInput.value);
+      if (crawlerExcludedUrlsCount) {
+        crawlerExcludedUrlsCount.textContent = `${rules.length} ${rules.length === 1 ? "rule" : "rules"}`;
+      }
+    }
+
+    // Custom HTTP Request Headers
+    renderHeadersUI(settings.customHeaders || []);
+
+    // Tab-driven Navigation settings
+    if (crawlerUseTabNavigationCheckbox) {
+      crawlerUseTabNavigationCheckbox.checked = Boolean(settings.useTabNavigation);
+    }
+    if (crawlerPageWaitDelayInput) {
+      crawlerPageWaitDelayInput.value = settings.pageWaitDelay ?? 2.0;
+      crawlerPageWaitDelayValue.textContent = `${crawlerPageWaitDelayInput.value}s`;
+    }
+    if (crawlerTabBackgroundCheckbox) {
+      crawlerTabBackgroundCheckbox.checked = settings.tabBackground !== false;
+    }
+    if (crawlerAutoCloseTabCheckbox) {
+      crawlerAutoCloseTabCheckbox.checked = settings.autoCloseTab !== false;
+    }
+
+    syncTabNavOptionsVisibility();
   }
 
   // 4. Update UI Elements
@@ -230,7 +561,8 @@
 
     // Current Link
     if (state.status === "running" && state.currentLink) {
-      currentLinkText.textContent = state.currentLink;
+      const modeLabel = state.settings && state.settings.useTabNavigation ? "🌐 [Tab]" : "⚡ [Fetch]";
+      currentLinkText.textContent = `${modeLabel} ${state.currentLink}`;
       currentLinkText.title = state.currentLink;
     } else if (state.status === "paused") {
       currentLinkText.textContent = `(Paused) Last URL: ${state.currentLink || "None"}`;
@@ -324,6 +656,44 @@
     crawlerDelayValue.textContent = `${crawlerDelayInput.value}s`;
     crawlerMaxDepthValue.textContent = crawlerMaxDepthInput.value;
     crawlerMaxPagesValue.textContent = crawlerMaxPagesInput.value;
+    if (crawlerTimeoutInput && crawlerTimeoutValue) {
+      crawlerTimeoutValue.textContent = `${crawlerTimeoutInput.value}s`;
+    }
+    if (crawlerPageWaitDelayInput) {
+      crawlerPageWaitDelayValue.textContent = `${crawlerPageWaitDelayInput.value}s`;
+    }
+
+    // Real-time validation & count for excluded file extensions
+    let extValidation = parseAndValidateExtensions(DEFAULT_EXCLUDED_EXTS_STR);
+    if (crawlerExcludedExtensionsInput && crawlerExcludedCount) {
+      extValidation = parseAndValidateExtensions(crawlerExcludedExtensionsInput.value);
+      if (!extValidation.isValid) {
+        crawlerExcludedCount.textContent = `${extValidation.count} excluded (${extValidation.invalidTokens.length} invalid)`;
+        crawlerExcludedCount.style.color = "#dc2626";
+        crawlerExcludedExtensionsInput.style.borderColor = "#ef4444";
+      } else {
+        crawlerExcludedCount.textContent = `${extValidation.count} excluded`;
+        crawlerExcludedCount.style.color = "#64748b";
+        crawlerExcludedExtensionsInput.style.borderColor = "";
+      }
+    }
+
+    // Real-time count for excluded URL patterns (Blacklist)
+    let blacklistPatterns = [];
+    if (crawlerExcludedUrlsInput) {
+      blacklistPatterns = parseExcludedUrlPatterns(crawlerExcludedUrlsInput.value);
+      if (crawlerExcludedUrlsCount) {
+        crawlerExcludedUrlsCount.textContent = `${blacklistPatterns.length} ${blacklistPatterns.length === 1 ? "rule" : "rules"}`;
+      }
+    }
+
+    // Real-time count for custom HTTP headers
+    const currentCustomHeaders = getCustomHeadersFromUI();
+    if (crawlerHeadersCount) {
+      crawlerHeadersCount.textContent = `${currentCustomHeaders.length} ${currentCustomHeaders.length === 1 ? "header" : "headers"}`;
+    }
+
+    syncTabNavOptionsVisibility();
 
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
@@ -331,32 +701,233 @@
         delaySeconds: parseFloat(crawlerDelayInput.value) || 1.5,
         maxDepth: parseInt(crawlerMaxDepthInput.value, 10) || 3,
         maxPages: parseInt(crawlerMaxPagesInput.value, 10) || 200,
-        stayInScope: crawlerStayInScopeCheckbox.checked
+        timeoutSeconds: crawlerTimeoutInput ? (parseFloat(crawlerTimeoutInput.value) || 15) : 15,
+        stayInScope: crawlerStayInScopeCheckbox.checked,
+        excludedExtensions: crawlerExcludedExtensionsInput ? crawlerExcludedExtensionsInput.value : DEFAULT_EXCLUDED_EXTS_STR,
+        excludedUrls: crawlerExcludedUrlsInput ? crawlerExcludedUrlsInput.value : "",
+        customHeaders: currentCustomHeaders,
+        useTabNavigation: crawlerUseTabNavigationCheckbox ? crawlerUseTabNavigationCheckbox.checked : false,
+        pageWaitDelay: crawlerPageWaitDelayInput ? (parseFloat(crawlerPageWaitDelayInput.value) || 2.0) : 2.0,
+        tabBackground: crawlerTabBackgroundCheckbox ? crawlerTabBackgroundCheckbox.checked : true,
+        autoCloseTab: crawlerAutoCloseTabCheckbox ? crawlerAutoCloseTabCheckbox.checked : true
       };
 
-      const res = await getStorage(["crawler_state", "crawler_configs"]);
+      const res = await getStorage(["crawler_state", "crawler_configs", "links"]);
       const state = res.crawler_state || {};
+      const storedLinks = (res.links && res.links[currentTarget]) || [];
+      const extSet = extValidation.extSet;
+
+      // Re-evaluate queue and update statistics
+      if (state.target === currentTarget) {
+        if (state.status === "idle" && (!state.visited || state.visited.length === 0)) {
+          const fullQueue = buildInitialQueue(currentTarget, storedLinks, extSet, blacklistPatterns);
+          state.queue = fullQueue;
+          state.totalCount = fullQueue.length;
+          state.depthMap = state.depthMap || {};
+          fullQueue.forEach(u => {
+            if (!state.depthMap[u]) state.depthMap[u] = 1;
+          });
+          state.percentage = 0;
+        } else if (Array.isArray(state.queue)) {
+          // If crawl was already initiated or paused, purge newly excluded extensions and blacklisted URLs
+          state.queue = state.queue.filter(url => !isStaticAsset(url, extSet) && !isUrlBlacklisted(url, blacklistPatterns));
+          const total = (state.visited ? state.visited.length : 0) + state.queue.length;
+          state.totalCount = total;
+          state.percentage = total > 0 ? Math.round(((state.visited ? state.visited.length : 0) / total) * 100) : 0;
+        }
+      }
+
       state.settings = newSettings;
 
       const configs = res.crawler_configs || {};
       configs[currentTarget] = newSettings;
 
       await setStorage({ crawler_state: state, crawler_configs: configs });
+      if (state.target === currentTarget) {
+        updateUI(state);
+      }
 
       // Flash "Saved ✓"
       settingsSavedIndicator.classList.add("visible");
       setTimeout(() => {
         settingsSavedIndicator.classList.remove("visible");
       }, 1500);
-    }, 200);
+    }, 250);
   }
 
   crawlerDelayInput.addEventListener("input", handleSettingChange);
   crawlerMaxDepthInput.addEventListener("input", handleSettingChange);
   crawlerMaxPagesInput.addEventListener("input", handleSettingChange);
+  if (crawlerTimeoutInput) {
+    crawlerTimeoutInput.addEventListener("input", handleSettingChange);
+  }
   crawlerStayInScopeCheckbox.addEventListener("change", handleSettingChange);
 
-  // 6. Crawler Loop & Controls
+  if (crawlerExcludedExtensionsInput) {
+    crawlerExcludedExtensionsInput.addEventListener("input", handleSettingChange);
+  }
+
+  if (crawlerExcludedUrlsInput) {
+    crawlerExcludedUrlsInput.addEventListener("input", handleSettingChange);
+  }
+
+  if (crawlerUseTabNavigationCheckbox) {
+    crawlerUseTabNavigationCheckbox.addEventListener("change", handleSettingChange);
+  }
+  if (crawlerPageWaitDelayInput) {
+    crawlerPageWaitDelayInput.addEventListener("input", handleSettingChange);
+  }
+  if (crawlerTabBackgroundCheckbox) {
+    crawlerTabBackgroundCheckbox.addEventListener("change", handleSettingChange);
+  }
+  if (crawlerAutoCloseTabCheckbox) {
+    crawlerAutoCloseTabCheckbox.addEventListener("change", handleSettingChange);
+  }
+
+  if (addHeaderBtn) {
+    addHeaderBtn.addEventListener("click", () => {
+      const hint = crawlerHeadersList ? crawlerHeadersList.querySelector(".headers-empty-hint") : null;
+      if (hint) hint.remove();
+      const newRow = createHeaderRowElement("", "");
+      if (crawlerHeadersList) {
+        crawlerHeadersList.appendChild(newRow);
+      }
+      const nameInp = newRow.querySelector(".header-name-input");
+      if (nameInp) nameInp.focus();
+      handleSettingChange();
+    });
+  }
+
+  // Settings Card Minimize / Maximize (Collapsible / Expandable)
+  function setSettingsCardCollapsed(collapsed) {
+    if (!crawlerSettingsCard) return;
+    if (collapsed) {
+      crawlerSettingsCard.classList.add("is-collapsed");
+      if (toggleSettingsText) toggleSettingsText.textContent = "Maximize";
+      if (toggleSettingsBtn) toggleSettingsBtn.title = "Maximize settings";
+      if (toggleSettingsIcon) toggleSettingsIcon.style.transform = "rotate(180deg)";
+      try {
+        localStorage.setItem("crawler_settings_collapsed", "true");
+      } catch (e) {}
+    } else {
+      crawlerSettingsCard.classList.remove("is-collapsed");
+      if (toggleSettingsText) toggleSettingsText.textContent = "Minimize";
+      if (toggleSettingsBtn) toggleSettingsBtn.title = "Minimize settings";
+      if (toggleSettingsIcon) toggleSettingsIcon.style.transform = "rotate(0deg)";
+      try {
+        localStorage.setItem("crawler_settings_collapsed", "false");
+      } catch (e) {}
+    }
+  }
+
+  function toggleSettingsCard() {
+    if (!crawlerSettingsCard) return;
+    const isCurrentlyCollapsed = crawlerSettingsCard.classList.contains("is-collapsed");
+    setSettingsCardCollapsed(!isCurrentlyCollapsed);
+  }
+
+  // Restore collapsed state on init
+  try {
+    if (localStorage.getItem("crawler_settings_collapsed") === "true") {
+      setSettingsCardCollapsed(true);
+    }
+  } catch (e) {}
+
+  if (toggleSettingsBtn) {
+    toggleSettingsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSettingsCard();
+    });
+  }
+
+  if (crawlerSettingsHeader) {
+    crawlerSettingsHeader.addEventListener("click", () => {
+      toggleSettingsCard();
+    });
+  }
+
+  // 6. Tab Navigation Helpers
+  async function getOrCreateCrawlerTab(url, inBackground = true, customHeaders = []) {
+    if (crawlerTabId !== null) {
+      try {
+        const existing = await chrome.tabs.get(crawlerTabId);
+        if (existing && !existing.discarded) {
+          await syncCrawlerTabHeaders(crawlerTabId, customHeaders);
+          await chrome.tabs.update(crawlerTabId, { url });
+          return crawlerTabId;
+        }
+      } catch (e) {
+        crawlerTabId = null;
+      }
+    }
+    const tab = await chrome.tabs.create({ url: "about:blank", active: !inBackground });
+    crawlerTabId = tab.id;
+    await syncCrawlerTabHeaders(crawlerTabId, customHeaders);
+    await chrome.tabs.update(crawlerTabId, { url });
+    return crawlerTabId;
+  }
+
+  function waitForTabLoad(tabId, timeoutMs = 15000) {
+    return new Promise((resolve) => {
+      let timer = null;
+      function listener(updatedTabId, changeInfo) {
+        if (updatedTabId === tabId && changeInfo.status === "complete") {
+          cleanup();
+          resolve(true);
+        }
+      }
+      function cleanup() {
+        if (timer) clearTimeout(timer);
+        chrome.tabs.onUpdated.removeListener(listener);
+      }
+      timer = setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, timeoutMs);
+      chrome.tabs.onUpdated.addListener(listener);
+    });
+  }
+
+  function requestTabLinks(tabId, timeoutMs = 8000) {
+    return new Promise((resolve) => {
+      let resolved = false;
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve([]);
+        }
+      }, timeoutMs);
+
+      chrome.tabs.sendMessage(tabId, { type: "extractTabLinks" }, (response) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        if (chrome.runtime.lastError || !response || !Array.isArray(response.links)) {
+          resolve([]);
+        } else {
+          resolve(response.links);
+        }
+      });
+    });
+  }
+
+  async function closeCrawlerTabIfNeeded() {
+    if (crawlerTabId !== null) {
+      try {
+        await chrome.tabs.remove(crawlerTabId);
+      } catch (e) {}
+      crawlerTabId = null;
+    }
+    if (chrome.declarativeNetRequest?.updateSessionRules) {
+      try {
+        await chrome.declarativeNetRequest.updateSessionRules({
+          removeRuleIds: [CRAWLER_SESSION_RULE_ID]
+        });
+      } catch (e) {}
+    }
+  }
+
+  // 7. Crawler Loop & Controls
   startCrawlerBtn.addEventListener("click", async () => {
     const res = await getStorage(["crawler_state", "links"]);
     let state = res.crawler_state || {};
@@ -364,7 +935,10 @@
     // If queue is empty, re-seed
     if (!state.queue || state.queue.length === 0) {
       const storedLinks = (res.links && res.links[currentTarget]) || [];
-      state.queue = buildInitialQueue(currentTarget, storedLinks);
+      const currentExcluded = (state.settings && state.settings.excludedExtensions) || DEFAULT_EXCLUDED_EXTS_STR;
+      const extVal = parseAndValidateExtensions(currentExcluded);
+      const blacklistPatterns = parseExcludedUrlPatterns(state.settings?.excludedUrls);
+      state.queue = buildInitialQueue(currentTarget, storedLinks, extVal.extSet, blacklistPatterns);
       state.depthMap = state.depthMap || {};
       state.queue.forEach(u => {
         if (!state.depthMap[u]) state.depthMap[u] = 1;
@@ -400,6 +974,7 @@
     state.status = "stopped";
     state.currentLink = "";
     await setStorage({ crawler_state: state });
+    await closeCrawlerTabIfNeeded();
     updateUI(state);
   });
 
@@ -407,9 +982,26 @@
     if (!confirm("Are you sure you want to reset the crawl queue and visited set back to the target root?")) {
       return;
     }
+    await closeCrawlerTabIfNeeded();
     const res = await getStorage(["crawler_state", "links", "crawler_configs"]);
     const storedLinks = (res.links && res.links[currentTarget]) || [];
-    const seedQueue = buildInitialQueue(currentTarget, storedLinks);
+    const settings = (res.crawler_state && res.crawler_state.settings) || (res.crawler_configs && res.crawler_configs[currentTarget]) || {
+      delaySeconds: 1.5,
+      maxDepth: 3,
+      maxPages: 200,
+      timeoutSeconds: 15,
+      stayInScope: true,
+      excludedExtensions: DEFAULT_EXCLUDED_EXTS_STR,
+      excludedUrls: "",
+      customHeaders: [],
+      useTabNavigation: false,
+      pageWaitDelay: 2.0,
+      tabBackground: true,
+      autoCloseTab: true
+    };
+    const extVal = parseAndValidateExtensions(settings.excludedExtensions);
+    const blacklistPatterns = parseExcludedUrlPatterns(settings.excludedUrls);
+    const seedQueue = buildInitialQueue(currentTarget, storedLinks, extVal.extSet, blacklistPatterns);
     const depthMap = {};
     seedQueue.forEach(u => { depthMap[u] = 1; });
 
@@ -423,12 +1015,7 @@
       queue: seedQueue,
       visited: [],
       depthMap: depthMap,
-      settings: (res.crawler_state && res.crawler_state.settings) || {
-        delaySeconds: 1.5,
-        maxDepth: 3,
-        maxPages: 200,
-        stayInScope: true
-      },
+      settings: settings,
       logs: []
     };
 
@@ -444,7 +1031,7 @@
     updateUI(state);
   });
 
-  // 7. Core Crawl Loop
+  // 8. Core Crawl Loop (Supports both Tab-driven & Fetch navigation)
   async function runCrawlLoop() {
     if (isCrawlLoopRunning) return;
     isCrawlLoopRunning = true;
@@ -463,8 +1050,21 @@
           delaySeconds: 1.5,
           maxDepth: 3,
           maxPages: 200,
-          stayInScope: true
+          timeoutSeconds: 15,
+          stayInScope: true,
+          excludedExtensions: DEFAULT_EXCLUDED_EXTS_STR,
+          excludedUrls: "",
+          customHeaders: [],
+          useTabNavigation: false,
+          pageWaitDelay: 2.0,
+          tabBackground: true,
+          autoCloseTab: true
         };
+        const extVal = parseAndValidateExtensions(settings.excludedExtensions);
+        const currentExtSet = extVal.extSet;
+        const blacklistPatterns = parseExcludedUrlPatterns(settings.excludedUrls);
+        const timeoutSec = Math.max(2, parseFloat(settings.timeoutSeconds) || 15);
+        const timeoutMs = timeoutSec * 1000;
 
         // Check completion limits
         if (!state.queue || state.queue.length === 0 || state.visited.length >= settings.maxPages) {
@@ -472,6 +1072,9 @@
           state.currentLink = "";
           addLogEntry(state, true, currentTarget, "Finished! All discovered URLs crawled.", 0);
           await setStorage({ crawler_state: state });
+          if (settings.autoCloseTab) {
+            await closeCrawlerTabIfNeeded();
+          }
           updateUI(state);
           break;
         }
@@ -484,82 +1087,198 @@
           continue;
         }
 
+        // Scope check: Skip any URLs outside target pattern
+        if (settings.stayInScope && !isUrlInScope(nextUrl, currentTarget)) {
+          state.visited.push(nextUrl);
+          await setStorage({ crawler_state: state });
+          continue;
+        }
+
+        // Static asset check: Skip any URLs matching excluded file extensions
+        if (isStaticAsset(nextUrl, currentExtSet)) {
+          state.visited.push(nextUrl);
+          await setStorage({ crawler_state: state });
+          continue;
+        }
+
+        // Blacklist check: Skip any URLs matching excluded URL patterns
+        if (isUrlBlacklisted(nextUrl, blacklistPatterns)) {
+          state.visited.push(nextUrl);
+          await setStorage({ crawler_state: state });
+          continue;
+        }
+
         // Mark current link
         state.currentLink = nextUrl;
         const currentDepth = (state.depthMap && state.depthMap[nextUrl]) || 1;
         updateUI(state);
         await setStorage({ crawler_state: state });
 
-        // Crawl the URL
+        // Crawl the URL based on selected mode
         let extractedCount = 0;
         let isSuccess = false;
         let logNote = "";
+        let discoveredInThisStep = [];
 
-        try {
-          const fetchResp = await fetch(nextUrl, {
-            headers: {
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        if (settings.useTabNavigation) {
+          // ============================================
+          // METHOD 1: Tab-driven Browser Navigation
+          // ============================================
+          try {
+            const inBackground = settings.tabBackground !== false;
+            const tid = await getOrCreateCrawlerTab(nextUrl, inBackground, settings.customHeaders);
+
+            // Wait for tab page to load within user-configured timeout
+            const loaded = await waitForTabLoad(tid, timeoutMs);
+            if (!loaded) {
+              logNote = `Tab Timeout (${timeoutSec}s)`;
             }
-          });
 
-          if (fetchResp.ok) {
-            isSuccess = true;
-            const htmlText = await fetchResp.text();
-            const doc = new DOMParser().parseFromString(htmlText, "text/html");
-            const baseUri = fetchResp.url || nextUrl;
+            // Wait post-load delay for SPA hydration (React/Vue), AJAX and DOM changes
+            const postLoadWaitMs = Math.max(500, (settings.pageWaitDelay || 2.0) * 1000);
+            await sleep(postLoadWaitMs);
 
-            // Extract all links
-            const rawLinks = extractLinksFromDocument(doc, baseUri);
+            // Request extracted links from tab's content script (with safety timeout)
+            let tabLinks = await requestTabLinks(tid, Math.min(10000, timeoutMs));
 
-            // Filter with target extraction rules (Include / Exclude regexes)
+            // Fallback to fetch if tab messaging returned no links
+            if (!tabLinks || tabLinks.length === 0) {
+              try {
+                const fbCtrl = new AbortController();
+                const fbTimer = setTimeout(() => fbCtrl.abort(), timeoutMs);
+                const customHeadersObj = buildHeadersObject(settings.customHeaders);
+                const fbResp = await fetch(nextUrl, {
+                  signal: fbCtrl.signal,
+                  headers: {
+                    "Accept": "text/html,application/xhtml+xml",
+                    ...customHeadersObj
+                  }
+                });
+                if (fbResp.ok) {
+                  const fbText = await fbResp.text();
+                  clearTimeout(fbTimer);
+                  const fbDoc = new DOMParser().parseFromString(fbText, "text/html");
+                  tabLinks = extractLinksFromDocument(fbDoc, fbResp.url || nextUrl);
+                } else {
+                  clearTimeout(fbTimer);
+                }
+              } catch (e) {}
+            }
+
+            // Filter ONLY the links extracted from THIS page using target extraction rules
             const targetRules = (res.extraction_rules && res.extraction_rules[currentTarget]) || { include: [], exclude: [] };
-            const filteredLinks = filterLinksWithRules(rawLinks, targetRules);
+            const filteredLinks = filterLinksWithRules(tabLinks || [], targetRules);
 
+            isSuccess = loaded || filteredLinks.length > 0;
             extractedCount = filteredLinks.length;
-            logNote = `+${extractedCount} links found`;
+            discoveredInThisStep = filteredLinks;
+            if (!logNote) {
+              logNote = `+${extractedCount} links`;
+            } else if (extractedCount > 0) {
+              logNote += ` (+${extractedCount} links)`;
+            }
 
             // Persist newly discovered links into target's main link storage
-            const currentStored = (res.links && res.links[currentTarget]) || [];
-            const mergedStored = [...new Set([...currentStored, ...filteredLinks])];
-            if (mergedStored.length !== currentStored.length) {
-              const linksObj = res.links || {};
+            const freshLinksRes = await getStorage(["links"]);
+            const storageLinks = (freshLinksRes.links && freshLinksRes.links[currentTarget]) || [];
+            const mergedStored = [...new Set([...storageLinks, ...filteredLinks])];
+            if (mergedStored.length !== storageLinks.length) {
+              const linksObj = freshLinksRes.links || {};
               linksObj[currentTarget] = mergedStored;
               await setStorage({ links: linksObj });
             }
-
-            // Enqueue subsequent links if depth limit allows
-            if (currentDepth < settings.maxDepth) {
-              for (const candidate of filteredLinks) {
-                if (state.visited.length + state.queue.length >= settings.maxPages) {
-                  break;
-                }
-
-                // Scope validation
-                if (settings.stayInScope && !isUrlInScope(candidate, currentTarget)) {
-                  continue;
-                }
-
-                // Filter out non-crawlable static asset files
-                if (isStaticAsset(candidate)) {
-                  continue;
-                }
-
-                // Canonicalize candidate (strip fragment #)
-                const cleanCandidate = candidate.split("#")[0].trim();
-                if (!cleanCandidate) continue;
-
-                if (!state.visited.includes(cleanCandidate) && !state.queue.includes(cleanCandidate)) {
-                  state.queue.push(cleanCandidate);
-                  state.depthMap = state.depthMap || {};
-                  state.depthMap[cleanCandidate] = currentDepth + 1;
-                }
-              }
-            }
-          } else {
-            logNote = `HTTP ${fetchResp.status} ${fetchResp.statusText || ""}`;
+          } catch (err) {
+            logNote = `Tab Error: ${err.message || "Failed"}`;
           }
-        } catch (err) {
-          logNote = `Error: ${err.message || "Network error"}`;
+        } else {
+          // ============================================
+          // METHOD 2: Fast Background Fetch Navigation
+          // ============================================
+          const abortCtrl = new AbortController();
+          const abortTimer = setTimeout(() => abortCtrl.abort(), timeoutMs);
+          const customHeadersObj = buildHeadersObject(settings.customHeaders);
+
+          try {
+            const fetchResp = await fetch(nextUrl, {
+              signal: abortCtrl.signal,
+              headers: {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                ...customHeadersObj
+              }
+            });
+
+            if (fetchResp.ok) {
+              const htmlText = await fetchResp.text();
+              clearTimeout(abortTimer);
+              const doc = new DOMParser().parseFromString(htmlText, "text/html");
+              const baseUri = fetchResp.url || nextUrl;
+
+              // Extract all links
+              const rawLinks = extractLinksFromDocument(doc, baseUri);
+
+              // Filter with target extraction rules (Include / Exclude regexes)
+              const targetRules = (res.extraction_rules && res.extraction_rules[currentTarget]) || { include: [], exclude: [] };
+              const filteredLinks = filterLinksWithRules(rawLinks, targetRules);
+
+              isSuccess = true;
+              extractedCount = filteredLinks.length;
+              discoveredInThisStep = filteredLinks;
+              logNote = `+${extractedCount} links`;
+
+              // Persist newly discovered links into target's main link storage
+              const currentStored = (res.links && res.links[currentTarget]) || [];
+              const mergedStored = [...new Set([...currentStored, ...filteredLinks])];
+              if (mergedStored.length !== currentStored.length) {
+                const linksObj = res.links || {};
+                linksObj[currentTarget] = mergedStored;
+                await setStorage({ links: linksObj });
+              }
+            } else {
+              clearTimeout(abortTimer);
+              logNote = `HTTP ${fetchResp.status} ${fetchResp.statusText || ""}`;
+            }
+          } catch (err) {
+            clearTimeout(abortTimer);
+            if (err.name === "AbortError") {
+              logNote = `Timeout (${timeoutSec}s)`;
+            } else {
+              logNote = `Fetch Error: ${err.message || "Network error"}`;
+            }
+          }
+        }
+
+        // Enqueue subsequent links if depth limit allows
+        if (isSuccess && currentDepth < settings.maxDepth) {
+          for (const candidate of discoveredInThisStep) {
+            if (state.visited.length + state.queue.length >= settings.maxPages) {
+              break;
+            }
+
+            // Scope validation
+            if (settings.stayInScope && !isUrlInScope(candidate, currentTarget)) {
+              continue;
+            }
+
+            // Blacklist URL patterns validation
+            if (isUrlBlacklisted(candidate, blacklistPatterns)) {
+              continue;
+            }
+
+            // Filter out non-crawlable static asset files based on user-configured extensions
+            if (isStaticAsset(candidate, currentExtSet)) {
+              continue;
+            }
+
+            // Canonicalize candidate (strip fragment #)
+            const cleanCandidate = candidate.split("#")[0].trim();
+            if (!cleanCandidate) continue;
+
+            if (!state.visited.includes(cleanCandidate) && !state.queue.includes(cleanCandidate)) {
+              state.queue.push(cleanCandidate);
+              state.depthMap = state.depthMap || {};
+              state.depthMap[cleanCandidate] = currentDepth + 1;
+            }
+          }
         }
 
         // Add to visited
@@ -580,6 +1299,11 @@
       }
     } finally {
       isCrawlLoopRunning = false;
+      const finalRes = await getStorage(["crawler_state"]);
+      const finalSettings = (finalRes.crawler_state && finalRes.crawler_state.settings) || {};
+      if (finalSettings.autoCloseTab && (finalRes.crawler_state?.status === "completed" || finalRes.crawler_state?.status === "stopped")) {
+        await closeCrawlerTabIfNeeded();
+      }
     }
   }
 
@@ -638,32 +1362,91 @@
 
   // Helper: Scope Checking
   function isUrlInScope(url, pattern) {
+    if (!url || !pattern) return false;
     if (typeof findMatchingPatterns === "function") {
       try {
         const matched = findMatchingPatterns([pattern], url);
         return Array.isArray(matched) && matched.length > 0;
-      } catch (e) { }
+      } catch (e) {}
     }
-    // Fallback: substring / domain check
+    try {
+      if (typeof patternToRegex === "function") {
+        const targetRegex = patternToRegex(pattern);
+        if (targetRegex) return targetRegex.test(url);
+      }
+    } catch (e) {}
+
+    // Strict domain check fallback (never loose substring)
     try {
       const u = new URL(url);
-      const p = pattern.replace(/^\*:\/\/|\/\*$/g, "").replace(/^\*\./, "");
-      return u.hostname.includes(p) || p.includes(u.hostname);
+      const cleanPattern = pattern.replace(/^https?:\/\//i, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
+      if (cleanPattern.startsWith("*.")) {
+        const baseDomain = cleanPattern.slice(2);
+        return u.hostname === baseDomain || u.hostname.endsWith("." + baseDomain);
+      }
+      return u.hostname === cleanPattern;
     } catch (e) {
       return false;
     }
   }
 
-  // Helper: Detect Non-HTML Media Assets
-  function isStaticAsset(url) {
+  // Helper: Blacklist / Excluded URL Pattern Matching
+  function isUrlBlacklisted(url, patterns) {
+    if (!url || !Array.isArray(patterns) || patterns.length === 0) return false;
+    for (const raw of patterns) {
+      if (!raw || typeof raw !== "string") continue;
+      const p = raw.trim();
+      if (!p) continue;
+
+      // 1. Exact match
+      if (url === p) return true;
+
+      // 2. Pattern Matcher (wildcard support)
+      try {
+        if (typeof matchPattern === "function" && matchPattern(p, url)) {
+          return true;
+        }
+      } catch (e) {}
+
+      // 3. Path-only pattern (e.g. "/admin/*" or "/logout")
+      if (p.startsWith("/")) {
+        try {
+          if (typeof matchPattern === "function" && matchPattern("*://*" + p, url)) {
+            return true;
+          }
+        } catch (e) {}
+        try {
+          const u = new URL(url);
+          const escaped = p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+          const pathRegex = new RegExp("^" + escaped + "$", "i");
+          if (pathRegex.test(u.pathname)) return true;
+        } catch (e) {}
+      }
+
+      // 4. Loose wildcard fallback
+      try {
+        const escaped = p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+        const wildcardRegex = new RegExp("^" + escaped + "$", "i");
+        if (wildcardRegex.test(url)) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  // Helper: Detect Non-HTML Media Assets based on dynamic extSet
+  function isStaticAsset(url, extSet) {
+    if (!url) return false;
+    const set = (extSet instanceof Set) ? extSet : parseAndValidateExtensions(DEFAULT_EXCLUDED_EXTS_STR).extSet;
+    if (set.size === 0) return false;
+
     try {
       const pathname = new URL(url).pathname.toLowerCase();
       const dotIdx = pathname.lastIndexOf(".");
       if (dotIdx !== -1) {
         const ext = pathname.slice(dotIdx);
-        if (STATIC_ASSET_EXTS.has(ext)) return true;
+        if (set.has(ext)) return true;
       }
-    } catch (e) { }
+    } catch (e) {}
     return false;
   }
 
@@ -686,7 +1469,7 @@
     }
   }
 
-  // 8. Storage Changed Listener (Sync across tabs)
+  // 9. Storage Changed Listener (Sync across tabs)
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.crawler_state) {
       const newState = changes.crawler_state.newValue;
@@ -696,7 +1479,6 @@
     }
   });
 
-  // 9. Initial Load
+  // 10. Initial Load
   initCrawlerState();
 })();
-

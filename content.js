@@ -124,6 +124,20 @@ function readWholeDocument(out) {
   readFrameLinks(document, out);
 }
 
+// Allow crawler to request live DOM links on demand in Tab-driven navigation mode
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message && message.type === "extractTabLinks") {
+    const out = new Set();
+    readWholeDocument(out);
+    sendResponse({
+      links: Array.from(out),
+      url: location.href,
+      title: document.title || ""
+    });
+    return true;
+  }
+});
+
 chrome.storage.local.get("origins", (result) => {
   const arr = result["origins"] || [];
   const matchingPatterns = typeof findMatchingPatterns === "function"
