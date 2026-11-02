@@ -38,7 +38,6 @@
       .input-group {
         display: flex;
         gap: 10px;
-        margin-bottom: 20px;
       }
 
       input[type="text"] {
@@ -106,15 +105,26 @@
   </head>
   <body>
     <div class="main_dashboard">
-      <div class="input-group">
-        <input type="text" id="originInput" placeholder="Enter origin..." />
+      <div class="input-group" style="margin-bottom: 16px;">
+        <input type="text" id="originInput" placeholder="Enter origin or pattern..." />
+        
+        <div class="origin-input-note">
+          <strong>Note:</strong> Supports wildcard patterns e.g. <code>https://*.google.com</code>, <code>https://google.com/*</code>
+        </div>
         <button id="addOriginBtn">Add</button>
       </div>
 
-      <h1>🔍 Origin List</h1>
+      <div class="origin-header">
+        <h1>🔍 Origin List</h1>
+        <span id="originCountBadge" class="origin-count-badge">0 origins</span>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <input type="text" id="searchOriginsInput" placeholder="🔍 Search origins..." style="width: 100%; box-sizing: border-box;" />
+      </div>
       <ul id="originList"></ul>
       <div id="added_origin"></div>
       <div id="data"></div>
+      <div id="originPagination" class="pagination" style="margin-top: 15px;"></div>
       <script src="assets/js/addorigin.js"></script>
 
     </div>
@@ -187,33 +197,77 @@
         <button id="save_sensitivities">Save</button>
       </div>
 
+      <div class="auto-crawl-container" style="margin-bottom: 16px;">
+        <button id="openAutoCrawlBtn" class="auto-crawl-btn"><img src="assets/images/crawler.svg" alt="Auto Crawl" style="width: 15px; height: 15px; vertical-align: -2px; margin-right: 6px; filter: brightness(0) invert(1);">Auto Crawl</button>
+      </div>
+
       <ul id="keywordList"></ul>
 
-      <div class="" style="margin-bottom: 10px">
-        <h2 style="margin-top: initial; text-align: left;">🔍 Extracted Links</h2>
+      <div class="" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+        <h2 style="margin-top: initial; text-align: left; margin-bottom: 0;">🔍 Extracted Links</h2>
+        <button id="openAddLinksModalBtn" title="Add links to target">+</button>
+        <button id="removeAllBtn">Remove All</button>
+
       </div>
-      <div id="origin"></div>
+      <div style="margin-bottom: 10px;">
+        <input type="text" id="searchLinksInput" placeholder="🔍 Search extracted links..." style="width: 100%; box-sizing: border-box;">
+      </div>
+      <div id="origin" style="margin-bottom: 8px;"></div>
+
       <div id="links"></div>
+      <span id="copy_all">Copy all to clipboard</span>
 
       <div class="pagination">
 
       </div>
       <div class="buttons_container" style="margin-top: 10px;">
-        <button id="copy_all">Copy all to clipboard</button>
         <button id="get_js_links">Extract links from JS files</button>
-        <button id="removeAllBtn">Remove all links</button>
+        <button id="extract_subdomains">Extract subdomains</button>
+        <button id="open_settings"><img src="assets/images/settings.svg" alt="Settings" style="width: 15px; height: 15px; vertical-align: -2px; margin-right: 5px; filter: brightness(0) invert(1);">Settings</button>
       </div>
 
 
       <div id="myModal" class="modal">
         <div class="modal-content">
           <span id="closeModalBtn" class="close-btn">&times;</span>
+          <div class="js-file-list-section">
+            <div id="jsFileList" class="js-file-list"></div>
+            <div class="js-file-list-header">
+              <span id="jsFileCount">0 JS files</span>
+              <button id="selectAllNoneBtn" class="select-toggle-btn">Select None</button>
+            </div>
+          </div>
+          <div class="crawler-options">
+            <h3>Crawler Options</h3>
+            <div class="regex regex-include">
+              <span class="span-title">Links include regexes<span class="add-regex add-regex-include">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="regex regex-exclude">
+              <span class="span-title">Links exclude regexes<span class="add-regex add-regex-exclude">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="other-opt" style="padding: 12px 5px 0px 5px;">
+              <span class="span-title">Other options</span>
+              <div style="display: flex; margin-bottom: 7px;">
+                <input type="checkbox" name="decode-urls" id="decode-urls" style="margin-right: 5px;">
+                <label for="decode-urls">Decode found URLs</label>
+              </div>
+              <div style="display: flex; margin-bottom: 7px;">
+                <input type="checkbox" name="base-url-predict" id="base-url-predict" style="margin-right: 5px;">
+                <label for="base-url-predict">Add base URL to found links</label>
+              </div>
+            </div>
+          </div>
           <div class="progress-div">
             <label for="file">Progress:</label>
             <div style="display: flex; justify-content: center; align-items: center;">
               <progress id="progression" value="0" max="100"></progress>
-              <span id="numeric-progression">10/124</span>
+              <span id="numeric-progression">0/0</span>
             </div>
+            <button id="crawlBtn">Crawl</button>
           </div>
           <div style="margin-bottom: 5px;">
             <span id="current_file"></span>
@@ -221,16 +275,108 @@
           <div>
             <textarea name="output" id="output"></textarea>
           </div>
-          <span id="copyBtn">copy</span>
           <div class="info-bar">
             <span class="links-number">0 links</span>
+            <span id="copyBtn">copy</span>
+
+          </div>
+          <div class="modal-buttons">
+            <button id="addLinksToTargetBtn">Add links</button>
           </div>
         </div>
       </div>
 
+      <div id="subdomainModal" class="modal">
+        <div class="modal-content">
+          <span id="closeSubdomainModalBtn" class="close-btn">&times;</span>
+          <h3 style="margin-bottom: 8px; color: #333;">🌐 Extracted Origins &amp; Subdomains</h3>
+          <div style="margin-bottom: 12px; font-size: 13px; color: #555;">
+            Target Root Domain: <strong id="subdomainRootDomain" style="color: #0066ff;">-</strong>
+          </div>
+          <div class="crawler-options" style="margin-bottom: 12px;">
+            <div class="regex regex-subdomain-include">
+              <span class="span-title">Include regexes<span class="add-regex add-subdomain-regex-include">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="regex regex-subdomain-exclude">
+              <span class="span-title">Exclude regexes<span class="add-regex add-subdomain-regex-exclude">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="other-opt" style="padding: 10px 5px 2px 5px; margin-top: 14px;">
+              <span class="span-title">Other options</span>
+              <div style="display: flex; margin-bottom: 7px; align-items: center;">
+                <input type="checkbox" name="only-tld-subdomains" id="only-tld-subdomains" style="margin-right: 6px; cursor: pointer;">
+                <label for="only-tld-subdomains" style="cursor: pointer; font-size: 13px;">Only show TLD+1 subdomains (<span id="subdomainRootDomainLabel">-</span>)</label>
+              </div>
+              <div style="display: flex; margin-bottom: 7px; align-items: center;">
+                <input type="checkbox" name="include-protocol" id="include-protocol" style="margin-right: 6px; cursor: pointer;">
+                <label for="include-protocol" style="cursor: pointer; font-size: 13px;">Include protocol (full Origin: https://...)</label>
+              </div>
+            </div>
+          </div>
+          <div>
+            <textarea name="subdomainOutput" id="subdomainOutput" readonly style="height: 180px; font-family: monospace;"></textarea>
+          </div>
+          <div class="info-bar">
+            <span id="subdomainCount" class="links-number">0 items</span>
+            <span id="copySubdomainsBtn">copy</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="addLinksModal" class="modal">
+        <div class="modal-content">
+          <span id="closeAddLinksModalBtn" class="close-btn">&times;</span>
+          <h3 style="margin-bottom: 8px; color: #333;">➕ Add Links to Target</h3>
+          <div style="margin-bottom: 12px; font-size: 13px; color: #555;">
+            Target: <strong id="addLinksTargetLabel" style="color: #0066ff;">-</strong>
+          </div>
+          <div>
+            <textarea id="customLinksInput" placeholder="Enter links (one per line)...&#10;https://example.com/page1&#10;https://example.com/page2" style="height: 180px; font-family: monospace;"></textarea>
+          </div>
+          <div class="info-bar" style="margin-top: 5px;">
+            <span id="customLinksCount" class="links-number">0 links</span>
+          </div>
+          <div class="modal-buttons" style="margin-top: 10px; display: flex; gap: 8px;">
+            <button id="saveCustomLinksBtn" style="background-color: #4CAF50; color: white; flex: 1">Add to links</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="settingsModal" class="modal">
+        <div class="modal-content">
+          <span id="closeSettingsModalBtn" class="close-btn">&times;</span>
+          <h3 style="margin-bottom: 8px; color: #333;">⚙️ Extraction Settings</h3>
+          <div style="margin-bottom: 12px; font-size: 13px; color: #555;">
+            Target: <strong id="settingsTargetLabel" style="color: #0066ff;">-</strong>
+          </div>
+          <div class="crawler-options" style="margin-bottom: 12px;">
+            <div class="regex regex-extraction-include">
+              <span class="span-title">Extraction include regexes<span class="add-regex add-extraction-regex-include">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+            <div class="regex regex-extraction-exclude">
+              <span class="span-title">Extraction exclude regexes<span class="add-regex add-extraction-regex-exclude">+</span></span>
+              <div class="custom-regexes">
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 12px; color: #666; margin-top: 6px;">
+            <em>ℹ️ Only links matching include regexes and not matching exclude regexes will be extracted. Rules are saved automatically.</em>
+          </div>
+        </div>
+      </div>
+
+      <script src="assets/js/pattern_matcher.js"></script>
       <script src="assets/js/dashboard.js"></script>
       <script src="assets/js/sensitivities.js"></script>
       <script src="assets/js/modal.js"></script>
+      <script src="assets/js/subdomains.js"></script>
+      <script src="assets/js/custom_links.js"></script>
+      <script src="assets/js/settings.js"></script>
       <script src="assets/js/helpers.js"></script>
     </div>
     <script src="assets/js/dash_checker.js"></script>

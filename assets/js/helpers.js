@@ -12,26 +12,30 @@ async function copyToClipboard(text) {
   }
 }
 
-
 document.getElementById("removeAllBtn").addEventListener("click", () => {
-    let confirmation = confirm("Are you sure ?")
-    if(confirmation){
-        chrome.storage.local.get("links", (result) => {
-            result["links"][getQueryParam("origin")] = []
-            chrome.storage.local.set({ ["links"]: result["links"] }, () => {
-                location.reload()
-            });            
-        })
-    }
-})
+  let confirmation = confirm("Are you sure ?");
+  if (confirmation) {
+    chrome.storage.local.get("links", (result) => {
+      result["links"][getQueryParam("origin")] = [];
+      chrome.storage.local.set({ ["links"]: result["links"] }, () => {
+        location.reload();
+      });
+    });
+  }
+});
 
 document.getElementById("copy_all").addEventListener("click", (e) => {
-    chrome.storage.local.get("links", (result) => {
-        e.target.innerText = "Copied"
-        let arr = result["links"][getQueryParam("origin")] || [];
-        copyToClipboard(arr.join("\n"))
-        setTimeout(() => {
-            e.target.innerText = "Copy all to clipboard"
-        }, 500)
-    })
-})
+  chrome.storage.local.get("links", (result) => {
+    let arr = (result["links"] && result["links"][getQueryParam("origin")]) || [];
+    const searchInput = document.getElementById("searchLinksInput");
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+    if (query) {
+      arr = arr.filter(link => link.toLowerCase().includes(query));
+    }
+    e.target.innerText = "Copied";
+    copyToClipboard(arr.join("\n"));
+    setTimeout(() => {
+      e.target.innerText = "Copy all to clipboard";
+    }, 500);
+  });
+});
